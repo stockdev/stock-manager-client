@@ -3,14 +3,50 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #141a21;
+  --foreground: #ffffff;
+  --backcontrast: #1c252e;
+  --primary:#ee9b27;
+  --secondary:#fdc868;
+  --hover:#3b454e;
+  --text-gray: #919eab;
+  --active:#262624;
+  
+  --hover-rgb: 59, 69, 78; /* RGB pentru #3b454e */
+  --primary-rgb: 238, 155, 39; /* RGB pentru #ee9b27 */
+  
+  --nav-item-root-non-active-bg: rgba(var(--hover-rgb), 0.08);
+  --nav-item-root-non-active-hover: rgba(var(--hover-rgb), 0.16);
+  --nav-item-root-active-bg: rgba(var(--primary-rgb), 0.08);
+  --nav-item-root-active-hover: rgba(var(--primary-rgb), 0.16);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+
+    /* PRIMARY COLORS  */
+    --background: #141a21;
+    --foreground: #ffffff;
+    --backcontrast: #1c252e;
+    --primary:#ee9b27;
+    --secondary:#fdc868;
+    --hover:#3b454e;
+    --text-gray: #919eab;
+   
+  
+  
+  /* NAVIGATION EFFECT BUTTONS AND KEYFRAMES */
+
+  --hover-rgb: 59, 69, 78;
+  --primary-rgb: 238, 155, 39;
+
+  --nav-item-root-non-active-hover: rgba(var(--hover-rgb), 0.16);
+  --nav-item-root-non-active-click: rgba(var(--hover-rgb), 0.32);
+
+  --nav-item-root-active-bg: rgba(var(--primary-rgb), 0.08);
+  --nav-item-root-active-hover: rgba(var(--primary-rgb), 0.16);
+  --nav-item-root-active-click:rgba(var(--primary-rgb), 0.32);
+  
   }
 }
 

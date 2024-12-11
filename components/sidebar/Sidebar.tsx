@@ -1,24 +1,26 @@
-import React from 'react'
+'use client';
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import SidebarHeader from './SidebarHeader';
+import SidebarMenu from './SidebarMenu';
 
 const Sidebar = () => {
-  return (
-    <section className='bg-zinc-900 min-h-full w-[20%] absolute'>
-    <div className='p-4 text-center h-20'>
-      <h2 className='text-4xl font-semibold'>Stock<span className='text-yellow-500'>Dev</span></h2>
-    </div>
-    <div className='bg-yellow-300 p-2'>
-      <ul className='bg-orange-400 flex flex-col gap-2'>
-        <li className='p-2 bg-red-400'>      
-          Dashboard
-        </li>
-        <li className='p-2 bg-red-400' > Article</li>
-        <li className='p-2 bg-red-400' > Location</li>
-        <li className='p-2 bg-red-400'>  Transactions</li>
-        <li className='p-2 bg-red-400'>  Settings</li>
-      </ul>
-    </div>
-    </section>
-  )
-}
+  const [isOpen, setIsOpen] = useState(true);
+  const [activeNav, setActiveNav] = useState('Dashboard');
 
-export default Sidebar
+  return (
+    <motion.section
+      className="border-r border-backcontrast min-h-full fixed shadow-xl"
+      variants={{
+        open: { width: '20%', transition: { duration: 0.5 } },
+        closed: { width: '7%', transition: { duration: 0.5 } },
+      }}
+      animate={isOpen ? 'open' : 'closed'}
+    >
+      <SidebarHeader isOpen={isOpen} setIsOpen={setIsOpen} />
+      <SidebarMenu activeNav={activeNav} setActiveNav={setActiveNav} isOpen={isOpen} />
+    </motion.section>
+  );
+};
+
+export default Sidebar;
