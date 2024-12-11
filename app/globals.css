@@ -12,8 +12,8 @@
   --text-gray: #919eab;
   --active:#262624;
   
-  --hover-rgb: 59, 69, 78; /* RGB pentru #3b454e */
-  --primary-rgb: 238, 155, 39; /* RGB pentru #ee9b27 */
+  --hover-rgb: 59, 69, 78; 
+  --primary-rgb: 238, 155, 39; 
   
   --nav-item-root-non-active-bg: rgba(var(--hover-rgb), 0.08);
   --nav-item-root-non-active-hover: rgba(var(--hover-rgb), 0.16);
@@ -35,17 +35,16 @@
    
   
   
-  /* NAVIGATION EFFECT BUTTONS AND KEYFRAMES */
+  /* NAVIGATION EFFECT BUTTONS */
 
   --hover-rgb: 59, 69, 78;
-  --primary-rgb: 238, 155, 39;
+  --primary-rgb: 253, 200, 104;
 
   --nav-item-root-non-active-hover: rgba(var(--hover-rgb), 0.16);
   --nav-item-root-non-active-click: rgba(var(--hover-rgb), 0.32);
 
-  --nav-item-root-active-bg: rgba(var(--primary-rgb), 0.08);
-  --nav-item-root-active-hover: rgba(var(--primary-rgb), 0.16);
-  --nav-item-root-active-click:rgba(var(--primary-rgb), 0.32);
+  --nav-item-root-active-bg: rgba(var(--primary-rgb), 0.02);
+  --nav-item-root-active-click:rgba(var(--primary-rgb), 0.16);
   
   }
 }

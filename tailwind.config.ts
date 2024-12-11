@@ -22,7 +22,6 @@ export default {
         navItemNonActiveHover: "var(--nav-item-root-non-active-hover)",
         navItemNonActiveClick: "var(--nav-item-root-non-active-click)",
         navItemActiveBg: "var(--nav-item-root-active-bg)",
-        navItemActiveHover: "var(--nav-item-root-active-hover)",
         navItemActiveClick: "var(--nav-item-root-active-click)",
       },
     },

@@ -1,21 +1,17 @@
+'use client';
 import React from 'react';
 import SidebarMenuItem from './SidebarMenuItem';
 import { useRouter } from 'next/navigation';
+import { useSidebar } from './SidebarProvider';
 import {
   faGauge,
   faFileAlt,
   faMapMarkerAlt,
   faExchangeAlt,
 } from '@fortawesome/free-solid-svg-icons';
-import { IconDefinition } from '@fortawesome/free-solid-svg-icons';
 
-interface SidebarMenuProps {
-  activeNav: string;
-  setActiveNav: (name: string) => void;
-  isOpen: boolean;
-}
-
-const SidebarMenu: React.FC<SidebarMenuProps> = ({ activeNav, setActiveNav, isOpen }) => {
+const SidebarMenu: React.FC = () => {
+  const { activeNav, setActiveNav, isOpen } = useSidebar();
   const router = useRouter();
 
   const menuItems = [
