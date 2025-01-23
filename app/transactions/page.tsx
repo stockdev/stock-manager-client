@@ -1,51 +1,82 @@
 "use client";
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Search, Upload, Trash2, ArrowUpDown, X } from 'lucide-react';
+import { 
+  Search, 
+  Plus, 
+  Package, 
+  MapPin, 
+  Calendar, 
+  Hash, 
+  MessageSquare,
+  ArrowUpDown,
+  X,
+  Edit,
+  Trash2,
+  FileUp
+} from 'lucide-react';
 
-interface Article {
+enum StockType {
+  ENTRY = 'ENTRY',
+  EXIT = 'EXIT'
+}
+
+enum SubStockType {
+  PURCHASE = 'PURCHASE',
+  SALE = 'SALE',
+  RETURN = 'RETURN',
+  DAMAGE = 'DAMAGE'
+}
+
+interface Stock {
   id: number;
-  code: string;
-  name: string;
+  location: {
+    code: string;
+    name: string;
+  };
+  article: {
+    code: string;
+    name: string;
+  };
+  stockType: StockType;
+  subStockType: SubStockType;
+  orderNumber: number;
+  quantity: number;
+  necessary: number;
+  transactionDate: string;
+  comment: string;
 }
 
-interface CreateArticleRequest {
-  name: string;
-  code: string;
-}
-
-interface UpdateArticleRequest {
-  name: string;
-  code: string;
-}
-
-const mockArticles: Article[] = [
+const mockStocks: Stock[] = [
   {
     id: 1,
-    code: "ART001",
-    name: "Article 1"
-  },
-  {
-    id: 2,
-    code: "ART002",
-    name: "Article 2"
+    location: { code: "LOC001", name: "Main Warehouse" },
+    article: { code: "ART001", name: "Article 1" },
+    stockType: StockType.ENTRY,
+    subStockType: SubStockType.PURCHASE,
+    orderNumber: 1001,
+    quantity: 100,
+    necessary: 150,
+    transactionDate: new Date().toISOString(),
+    comment: "Initial stock"
   }
 ];
 
-export default function ArticlePage() {
+const ITEMS_PER_PAGE = 10;
+
+export default function StockPage() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
-  const [createForm, setCreateForm] = useState<CreateArticleRequest>({ name: '', code: '' });
-  const [updateForm, setUpdateForm] = useState<UpdateArticleRequest>({ name: '', code: '' });
+  const [selectedStock, setSelectedStock] = useState<Stock | null>(null);
   const [sortConfig, setSortConfig] = useState<{
-    key: keyof Article | null;
+    key: keyof Stock | null;
     direction: 'asc' | 'desc';
   }>({ key: null, direction: 'asc' });
 
-  const handleSort = (key: keyof Article) => {
+  const handleSort = (key: keyof Stock) => {
     setSortConfig({
       key,
       direction:
@@ -60,38 +91,6 @@ export default function ArticlePage() {
     if (file) {
       console.log('Importing file:', file.name);
     }
-  };
-
-  const handleDeleteAll = () => {
-    if (window.confirm('Are you sure you want to delete all articles? This action cannot be undone.')) {
-      console.log('Deleting all articles');
-    }
-  };
-
-  const handleCreateSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('Creating article:', createForm);
-    setIsCreateModalOpen(false);
-    setCreateForm({ name: '', code: '' });
-  };
-
-  const handleUpdateSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('Updating article:', updateForm);
-    setIsUpdateModalOpen(false);
-    setUpdateForm({ name: '', code: '' });
-  };
-
-  const handleDelete = () => {
-    console.log('Deleting article:', selectedArticle?.code);
-    setIsDeleteDialogOpen(false);
-    setSelectedArticle(null);
-  };
-
-  const openUpdateModal = (article: Article) => {
-    setSelectedArticle(article);
-    setUpdateForm({ name: article.name, code: article.code });
-    setIsUpdateModalOpen(true);
   };
 
   const modalVariants = {
@@ -109,7 +108,7 @@ export default function ArticlePage() {
           animate={{ opacity: 1, y: 0 }}
           className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent"
         >
-          Articles Management
+          Stock Transactions
         </motion.h1>
         <motion.p
           initial={{ opacity: 0, y: -20 }}
@@ -117,7 +116,7 @@ export default function ArticlePage() {
           transition={{ delay: 0.1 }}
           className="text-zinc-400 mt-2"
         >
-          Manage your inventory articles
+          Manage stock movements and inventory transactions
         </motion.p>
       </div>
 
@@ -132,13 +131,13 @@ export default function ArticlePage() {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-zinc-400 w-4 h-4" />
           <input
             type="text"
-            placeholder="Search articles..."
+            placeholder="Search transactions..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 bg-zinc-900/50 border border-zinc-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-sm text-zinc-200 placeholder-zinc-500"
           />
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2">
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -146,11 +145,11 @@ export default function ArticlePage() {
             className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg hover:from-blue-600 hover:to-purple-600 transition-colors flex items-center gap-2 text-sm font-medium"
           >
             <Plus className="w-4 h-4" />
-            Add Article
+            New Transaction
           </motion.button>
           
           <label className="px-4 py-2 bg-emerald-500/20 text-emerald-400 rounded-lg hover:bg-emerald-500/30 transition-colors flex items-center gap-2 text-sm font-medium cursor-pointer">
-            <Upload className="w-4 h-4" />
+            <FileUp className="w-4 h-4" />
             Import Excel
             <input
               type="file"
@@ -159,20 +158,10 @@ export default function ArticlePage() {
               className="hidden"
             />
           </label>
-
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handleDeleteAll}
-            className="px-4 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors flex items-center gap-2 text-sm font-medium"
-          >
-            <Trash2 className="w-4 h-4" />
-            Delete All
-          </motion.button>
         </div>
       </motion.div>
 
-      {/* Table */}
+      {/* Transactions Table */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -185,21 +174,27 @@ export default function ArticlePage() {
               <tr className="border-b border-zinc-800">
                 <th className="px-6 py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
                   <button
-                    onClick={() => handleSort('code')}
+                    onClick={() => handleSort('orderNumber')}
                     className="flex items-center gap-2 hover:text-zinc-200"
                   >
-                    Code
+                    Order #
                     <ArrowUpDown className="w-4 h-4" />
                   </button>
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
-                  <button
-                    onClick={() => handleSort('name')}
-                    className="flex items-center gap-2 hover:text-zinc-200"
-                  >
-                    Name
-                    <ArrowUpDown className="w-4 h-4" />
-                  </button>
+                  Article
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                  Location
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                  Type
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                  Quantity
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                  Date
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
                   Actions
@@ -207,36 +202,62 @@ export default function ArticlePage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800">
-              {mockArticles.map((article) => (
+              {mockStocks.map((stock) => (
                 <motion.tr
-                  key={article.id}
+                  key={stock.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  whileHover={{ backgroundColor: 'rgba(255, 255, 255, 0.02)' }}
-                  className="group"
+                  className="group hover:bg-white/[0.02] transition-colors"
                 >
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-300">
-                    {article.code}
+                    #{stock.orderNumber}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-300">
-                    {article.name}
+                    <div className="flex items-center gap-2">
+                      <Package className="w-4 h-4 text-zinc-400" />
+                      <span>{stock.article.code}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-300">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-zinc-400" />
+                      <span>{stock.location.code}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      stock.stockType === StockType.ENTRY
+                        ? 'bg-emerald-500/20 text-emerald-400'
+                        : 'bg-red-500/20 text-red-400'
+                    }`}>
+                      {stock.stockType}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-300">
+                    {stock.quantity}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-300">
+                    {new Date(stock.transactionDate).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-300">
                     <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
-                        onClick={() => openUpdateModal(article)}
-                        className="px-3 py-1 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20 transition-colors"
+                        onClick={() => {
+                          setSelectedStock(stock);
+                          setIsUpdateModalOpen(true);
+                        }}
+                        className="p-1 hover:bg-blue-500/10 rounded"
                       >
-                        Edit
+                        <Edit className="w-4 h-4 text-blue-400" />
                       </button>
                       <button
                         onClick={() => {
-                          setSelectedArticle(article);
+                          setSelectedStock(stock);
                           setIsDeleteDialogOpen(true);
                         }}
-                        className="px-3 py-1 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 transition-colors"
+                        className="p-1 hover:bg-red-500/10 rounded"
                       >
-                        Delete
+                        <Trash2 className="w-4 h-4 text-red-400" />
                       </button>
                     </div>
                   </td>
@@ -247,9 +268,9 @@ export default function ArticlePage() {
         </div>
       </motion.div>
 
-      {/* Create Modal */}
+      {/* Create/Update Modal */}
       <AnimatePresence>
-        {isCreateModalOpen && (
+        {(isCreateModalOpen || isUpdateModalOpen) && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
             <motion.div
               variants={modalVariants}
@@ -259,106 +280,118 @@ export default function ArticlePage() {
               className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 w-full max-w-md relative"
             >
               <button
-                onClick={() => setIsCreateModalOpen(false)}
+                onClick={() => {
+                  setIsCreateModalOpen(false);
+                  setIsUpdateModalOpen(false);
+                }}
                 className="absolute right-4 top-4 text-zinc-400 hover:text-white"
               >
                 <X className="w-5 h-5" />
               </button>
-              <h2 className="text-xl font-semibold mb-4">Create New Article</h2>
-              <form onSubmit={handleCreateSubmit}>
-                <div className="space-y-4">
+              <h2 className="text-xl font-semibold mb-4">
+                {isCreateModalOpen ? 'New Stock Transaction' : 'Update Transaction'}
+              </h2>
+              <form className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-zinc-400 mb-1">
-                      Code
+                      Article Code
                     </label>
                     <input
                       type="text"
-                      required
-                      value={createForm.code}
-                      onChange={(e) => setCreateForm({ ...createForm, code: e.target.value })}
                       className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                      defaultValue={selectedStock?.article.code}
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-zinc-400 mb-1">
-                      Name
+                      Location Code
                     </label>
                     <input
                       type="text"
-                      required
-                      value={createForm.name}
-                      onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
                       className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                      defaultValue={selectedStock?.location.code}
                     />
                   </div>
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    type="submit"
-                    className="w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg hover:from-blue-600 hover:to-purple-600 transition-colors"
-                  >
-                    Create Article
-                  </motion.button>
                 </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Update Modal */}
-      <AnimatePresence>
-        {isUpdateModalOpen && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-            <motion.div
-              variants={modalVariants}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-              className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 w-full max-w-md relative"
-            >
-              <button
-                onClick={() => setIsUpdateModalOpen(false)}
-                className="absolute right-4 top-4 text-zinc-400 hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
-              <h2 className="text-xl font-semibold mb-4">Update Article</h2>
-              <form onSubmit={handleUpdateSubmit}>
-                <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-zinc-400 mb-1">
-                      Code
+                      Stock Type
                     </label>
-                    <input
-                      type="text"
-                      required
-                      value={updateForm.code}
-                      onChange={(e) => setUpdateForm({ ...updateForm, code: e.target.value })}
+                    <select
                       className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                    />
+                      defaultValue={selectedStock?.stockType}
+                    >
+                      {Object.values(StockType).map((type) => (
+                        <option key={type} value={type}>{type}</option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-zinc-400 mb-1">
-                      Name
+                      Sub Type
                     </label>
-                    <input
-                      type="text"
-                      required
-                      value={updateForm.name}
-                      onChange={(e) => setUpdateForm({ ...updateForm, name: e.target.value })}
+                    <select
                       className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                    />
+                      defaultValue={selectedStock?.subStockType}
+                    >
+                      {Object.values(SubStockType).map((type) => (
+                        <option key={type} value={type}>{type}</option>
+                      ))}
+                    </select>
                   </div>
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    type="submit"
-                    className="w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg hover:from-blue-600 hover:to-purple-600 transition-colors"
-                  >
-                    Update Article
-                  </motion.button>
                 </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-400 mb-1">
+                      Order Number
+                    </label>
+                    <input
+                      type="number"
+                      className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                      defaultValue={selectedStock?.orderNumber}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-400 mb-1">
+                      Quantity
+                    </label>
+                    <input
+                      type="number"
+                      className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                      defaultValue={selectedStock?.quantity}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-zinc-400 mb-1">
+                    Necessary Amount
+                  </label>
+                  <input
+                    type="number"
+                    className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    defaultValue={selectedStock?.necessary}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-zinc-400 mb-1">
+                    Comment
+                  </label>
+                  <textarea
+                    className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    rows={3}
+                    defaultValue={selectedStock?.comment}
+                  />
+                </div>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  type="submit"
+                  className="w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg hover:from-blue-600 hover:to-purple-600 transition-colors"
+                >
+                  {isCreateModalOpen ? 'Create Transaction' : 'Update Transaction'}
+                </motion.button>
               </form>
             </motion.div>
           </div>
@@ -378,8 +411,8 @@ export default function ArticlePage() {
             >
               <h2 className="text-xl font-semibold mb-4">Confirm Deletion</h2>
               <p className="text-zinc-400 mb-6">
-                Are you sure you want to delete the article with code{' '}
-                <span className="text-red-400 font-semibold">{selectedArticle?.code}</span>?
+                Are you sure you want to delete the transaction with order number{' '}
+                <span className="text-red-400 font-semibold">#{selectedStock?.orderNumber}</span>?
                 This action cannot be undone.
               </p>
               <div className="flex gap-4">
@@ -394,7 +427,10 @@ export default function ArticlePage() {
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={handleDelete}
+                  onClick={() => {
+                    console.log('Deleting stock:', selectedStock?.id);
+                    setIsDeleteDialogOpen(false);
+                  }}
                   className="flex-1 px-4 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors"
                 >
                   Delete

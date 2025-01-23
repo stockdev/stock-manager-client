@@ -1,95 +1,105 @@
 "use client";
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Search, Upload, Trash2, ArrowUpDown, X } from 'lucide-react';
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Plus, Search, Upload, Trash2, ArrowUpDown, X } from "lucide-react";
 
-interface Article {
+interface Location {
   id: number;
   code: string;
   name: string;
 }
 
-interface CreateArticleRequest {
+interface CreateLocationRequest {
   name: string;
   code: string;
 }
 
-interface UpdateArticleRequest {
+interface UpdateLocationRequest {
   name: string;
   code: string;
 }
 
-const mockArticles: Article[] = [
+const mockLocation: Location[] = [
   {
     id: 1,
-    code: "ART001",
-    name: "Article 1"
+    code: "LOC001",
+    name: " Location 1",
   },
   {
     id: 2,
-    code: "ART002",
-    name: "Article 2"
-  }
+    code: "LOC002",
+    name: " Location  2",
+  },
 ];
 
-export default function ArticlePage() {
-  const [searchTerm, setSearchTerm] = useState('');
+export default function  LocationPage() {
+  const [searchTerm, setSearchTerm] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
-  const [createForm, setCreateForm] = useState<CreateArticleRequest>({ name: '', code: '' });
-  const [updateForm, setUpdateForm] = useState<UpdateArticleRequest>({ name: '', code: '' });
+  const [selectedLocation, setSelectedLocation] = useState< Location | null>(null);
+  const [createForm, setCreateForm] = useState<CreateLocationRequest>({
+    name: "",
+    code: "",
+  });
+  const [updateForm, setUpdateForm] = useState<UpdateLocationRequest>({
+    name: "",
+    code: "",
+  });
   const [sortConfig, setSortConfig] = useState<{
-    key: keyof Article | null;
-    direction: 'asc' | 'desc';
-  }>({ key: null, direction: 'asc' });
+    key: keyof Location | null;
+    direction: "asc" | "desc";
+  }>({ key: null, direction: "asc" });
 
-  const handleSort = (key: keyof Article) => {
+  const handleSort = (key: keyof Location) => {
     setSortConfig({
       key,
       direction:
-        sortConfig.key === key && sortConfig.direction === 'asc'
-          ? 'desc'
-          : 'asc',
+        sortConfig.key === key && sortConfig.direction === "asc"
+          ? "desc"
+          : "asc",
     });
   };
 
   const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      console.log('Importing file:', file.name);
+      console.log("Importing file:", file.name);
     }
   };
 
   const handleDeleteAll = () => {
-    if (window.confirm('Are you sure you want to delete all articles? This action cannot be undone.')) {
-      console.log('Deleting all articles');
+    if (
+      window.confirm(
+        "Are you sure you want to delete all articles? This action cannot be undone."
+      )
+    ) {
+      console.log("Deleting all articles");
     }
   };
 
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Creating article:', createForm);
+    console.log("Creating article:", createForm);
     setIsCreateModalOpen(false);
-    setCreateForm({ name: '', code: '' });
+    setCreateForm({ name: "", code: "" });
   };
 
   const handleUpdateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Updating article:', updateForm);
+    console.log("Updating article:", updateForm);
     setIsUpdateModalOpen(false);
-    setUpdateForm({ name: '', code: '' });
+    setUpdateForm({ name: "", code: "" });
   };
 
   const handleDelete = () => {
-    console.log('Deleting article:', selectedArticle?.code);
+    console.log("Deleting Location :", selectedLocation?.code);
     setIsDeleteDialogOpen(false);
-    setSelectedArticle(null);
+    setSelectedLocation(null);
   };
 
-  const openUpdateModal = (article: Article) => {
-    setSelectedArticle(article);
+  const openUpdateModal = (article: Location) => {
+    setSelectedLocation(article);
     setUpdateForm({ name: article.name, code: article.code });
     setIsUpdateModalOpen(true);
   };
@@ -97,7 +107,7 @@ export default function ArticlePage() {
   const modalVariants = {
     hidden: { opacity: 0, scale: 0.95 },
     visible: { opacity: 1, scale: 1 },
-    exit: { opacity: 0, scale: 0.95 }
+    exit: { opacity: 0, scale: 0.95 },
   };
 
   return (
@@ -109,7 +119,7 @@ export default function ArticlePage() {
           animate={{ opacity: 1, y: 0 }}
           className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent"
         >
-          Articles Management
+          Locations Management
         </motion.h1>
         <motion.p
           initial={{ opacity: 0, y: -20 }}
@@ -117,7 +127,7 @@ export default function ArticlePage() {
           transition={{ delay: 0.1 }}
           className="text-zinc-400 mt-2"
         >
-          Manage your inventory articles
+          Manage your inventory locations
         </motion.p>
       </div>
 
@@ -132,7 +142,7 @@ export default function ArticlePage() {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-zinc-400 w-4 h-4" />
           <input
             type="text"
-            placeholder="Search articles..."
+            placeholder="Search locations..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 bg-zinc-900/50 border border-zinc-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-sm text-zinc-200 placeholder-zinc-500"
@@ -148,7 +158,7 @@ export default function ArticlePage() {
             <Plus className="w-4 h-4" />
             Add Article
           </motion.button>
-          
+
           <label className="px-4 py-2 bg-emerald-500/20 text-emerald-400 rounded-lg hover:bg-emerald-500/30 transition-colors flex items-center gap-2 text-sm font-medium cursor-pointer">
             <Upload className="w-4 h-4" />
             Import Excel
@@ -185,7 +195,7 @@ export default function ArticlePage() {
               <tr className="border-b border-zinc-800">
                 <th className="px-6 py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
                   <button
-                    onClick={() => handleSort('code')}
+                    onClick={() => handleSort("code")}
                     className="flex items-center gap-2 hover:text-zinc-200"
                   >
                     Code
@@ -194,7 +204,7 @@ export default function ArticlePage() {
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
                   <button
-                    onClick={() => handleSort('name')}
+                    onClick={() => handleSort("name")}
                     className="flex items-center gap-2 hover:text-zinc-200"
                   >
                     Name
@@ -207,12 +217,12 @@ export default function ArticlePage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800">
-              {mockArticles.map((article) => (
+              {mockLocation.map((article) => (
                 <motion.tr
                   key={article.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  whileHover={{ backgroundColor: 'rgba(255, 255, 255, 0.02)' }}
+                  whileHover={{ backgroundColor: "rgba(255, 255, 255, 0.02)" }}
                   className="group"
                 >
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-300">
@@ -231,7 +241,7 @@ export default function ArticlePage() {
                       </button>
                       <button
                         onClick={() => {
-                          setSelectedArticle(article);
+                          setSelectedLocation(article);
                           setIsDeleteDialogOpen(true);
                         }}
                         className="px-3 py-1 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 transition-colors"
@@ -264,7 +274,7 @@ export default function ArticlePage() {
               >
                 <X className="w-5 h-5" />
               </button>
-              <h2 className="text-xl font-semibold mb-4">Create New Article</h2>
+              <h2 className="text-xl font-semibold mb-4">Create New Location</h2>
               <form onSubmit={handleCreateSubmit}>
                 <div className="space-y-4">
                   <div>
@@ -275,7 +285,9 @@ export default function ArticlePage() {
                       type="text"
                       required
                       value={createForm.code}
-                      onChange={(e) => setCreateForm({ ...createForm, code: e.target.value })}
+                      onChange={(e) =>
+                        setCreateForm({ ...createForm, code: e.target.value })
+                      }
                       className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                     />
                   </div>
@@ -287,7 +299,9 @@ export default function ArticlePage() {
                       type="text"
                       required
                       value={createForm.name}
-                      onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+                      onChange={(e) =>
+                        setCreateForm({ ...createForm, name: e.target.value })
+                      }
                       className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                     />
                   </div>
@@ -297,7 +311,7 @@ export default function ArticlePage() {
                     type="submit"
                     className="w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg hover:from-blue-600 hover:to-purple-600 transition-colors"
                   >
-                    Create Article
+                    Create Location
                   </motion.button>
                 </div>
               </form>
@@ -323,7 +337,7 @@ export default function ArticlePage() {
               >
                 <X className="w-5 h-5" />
               </button>
-              <h2 className="text-xl font-semibold mb-4">Update Article</h2>
+              <h2 className="text-xl font-semibold mb-4">Update Location</h2>
               <form onSubmit={handleUpdateSubmit}>
                 <div className="space-y-4">
                   <div>
@@ -334,7 +348,9 @@ export default function ArticlePage() {
                       type="text"
                       required
                       value={updateForm.code}
-                      onChange={(e) => setUpdateForm({ ...updateForm, code: e.target.value })}
+                      onChange={(e) =>
+                        setUpdateForm({ ...updateForm, code: e.target.value })
+                      }
                       className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                     />
                   </div>
@@ -346,7 +362,9 @@ export default function ArticlePage() {
                       type="text"
                       required
                       value={updateForm.name}
-                      onChange={(e) => setUpdateForm({ ...updateForm, name: e.target.value })}
+                      onChange={(e) =>
+                        setUpdateForm({ ...updateForm, name: e.target.value })
+                      }
                       className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                     />
                   </div>
@@ -356,7 +374,7 @@ export default function ArticlePage() {
                     type="submit"
                     className="w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg hover:from-blue-600 hover:to-purple-600 transition-colors"
                   >
-                    Update Article
+                    Update Location
                   </motion.button>
                 </div>
               </form>
@@ -378,9 +396,11 @@ export default function ArticlePage() {
             >
               <h2 className="text-xl font-semibold mb-4">Confirm Deletion</h2>
               <p className="text-zinc-400 mb-6">
-                Are you sure you want to delete the article with code{' '}
-                <span className="text-red-400 font-semibold">{selectedArticle?.code}</span>?
-                This action cannot be undone.
+                Are you sure you want to delete the location with code{" "}
+                <span className="text-red-400 font-semibold">
+                  {selectedLocation?.code}
+                </span>
+                ? This action cannot be undone.
               </p>
               <div className="flex gap-4">
                 <motion.button
