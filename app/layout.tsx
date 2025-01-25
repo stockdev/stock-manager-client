@@ -1,6 +1,9 @@
 import { Metadata } from 'next';
 import './globals.css';
 import Sidebar from '@/components/Sidebar';
+import LoginProvider from '@/core/context/LoginProvider';
+import { Layout } from 'lucide-react';
+import LayoutWrapper from '@/core/wrapper/LayoutWrapper';
 
 export const metadata: Metadata = {
   title: 'Dashboard',
@@ -15,12 +18,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="bg-gray-50 dark:bg-gray-900">
-        <div className="flex h-screen overflow-hidden">
-          <Sidebar />
-          <main className="flex-1 overflow-y-auto">
-            {children}
-          </main>
-        </div>
+        <LoginProvider>
+        <LayoutWrapper>{children}</LayoutWrapper>
+        </LoginProvider>
       </body>
     </html>
   );
