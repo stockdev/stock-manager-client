@@ -3,9 +3,10 @@ import React, { useEffect, useCallback, useMemo, useState } from "react";
 import Cookies from "js-cookie";
 import LoginResponse from "../user/dto/LoginResponse";
 import { useRouter } from "next/navigation";
-import { toast } from "react-toastify"; 
 import "react-toastify/dist/ReactToastify.css"; 
 import LoginContextType from "./LoginContextType";
+import { toast } from "sonner";
+import { ToastMessage } from "../toast/ToastMessage";
 
 type LoginProviderProps = {
   children?: React.ReactNode;
@@ -17,9 +18,9 @@ export const LoginContext = React.createContext<LoginContextType | undefined>(
 
 const defaultUserState: LoginResponse = {
   jwtToken: "",
-  firstName: "",
-  lastName: "",
-  phoneNumber: "",
+  id: 0,
+  fullName: "",
+  phone: "",
   email: "",
   userRole: "",
 };
@@ -51,10 +52,15 @@ const LoginProvider: React.FC<LoginProviderProps> = ({ children }) => {
     setUser(defaultUserState);
     Cookies.remove("user");
     Cookies.remove("authToken");
-    toast.info("You have been logged out successfully.", {
-      position: "top-center",
-      autoClose: 3000,
-    });
+    toast.custom((t) => (
+      <ToastMessage
+        type="info"
+        title="Logged Out"
+        message="You have been logged out."
+        onClose={() => toast.dismiss(t)}
+
+      />
+    ));
     setTimeout(() => {
       router.push("login");
     }, 1000);

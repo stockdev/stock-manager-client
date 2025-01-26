@@ -1,42 +1,73 @@
 'use client';
 
+
 import React, { useState, useContext } from 'react';
 import { motion } from 'framer-motion';
 import { Mail, Lock, LogIn } from 'lucide-react';
 import UserService from '@/core/user/service/UserService';
-import { toast } from 'react-toastify';
 import { useRouter } from 'next/navigation';
 import { LoginContext } from '@/core/context/LoginProvider';
 import LoginContextType from '@/core/context/LoginContextType';
+import { toast } from 'sonner';
+import { ToastMessage } from '@/core/toast/ToastMessage';
+
 
 export default function Login() {
   const { setUserCookie } = useContext(LoginContext) as LoginContextType;
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
+  
     try {
       const userService = new UserService();
       const loginResponse = await userService.login({ email, password });
-      setUserCookie(loginResponse);
-      toast.success('Welcome back! Login successful.', {
-        position: 'top-center',
-        autoClose: 3000,
-      });
-      router.push('/');
+  
+      if (typeof loginResponse === 'string') {
+        toast.custom((t) => (
+          <ToastMessage
+            type="error"
+            title="Authentication Failed"
+            message={loginResponse}
+            onClose={() => toast.dismiss(t)}
+          />
+        ));
+      } else {
+        setUserCookie(loginResponse);
+        toast.custom((t) => (
+          <ToastMessage
+            type="success"
+            title="Success"
+            message="Welcome back! Login successful."
+            onClose={() => toast.dismiss(t)}
+
+          />
+        ));
+        router.push('/');
+      }
     } catch (error) {
-      toast.error((error as Error).message || 'Failed to login', {
-        position: 'top-center',
-      });
+      toast.custom((t) => (
+        <ToastMessage
+          type="warning"
+          title="Error"
+          message={(error as Error).message || 'Failed to login'}
+          onClose={() => toast.dismiss(t)}
+        />
+      ));
     } finally {
       setLoading(false);
     }
   };
+  
+  
+  
+  
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center p-4">

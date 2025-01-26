@@ -1,8 +1,8 @@
 export default interface LoginResponse{
     jwtToken : string;
-    firstName : string;
-    lastName : string;
-    phoneNumber : string;
+    id : number;
+    fullName : string;
+    phone : string;
     email : string;
     userRole : string;
 }

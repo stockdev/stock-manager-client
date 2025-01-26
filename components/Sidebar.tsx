@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import {
   LayoutDashboard,
   
@@ -10,9 +10,12 @@ import {
   WalletCards,
   Users,
   ChevronLeft,
+  Bell,
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { LoginContext } from "@/core/context/LoginProvider";
+import LoginContextType from "@/core/context/LoginContextType";
 
 const menuItems = [
   { name: "Dashboard", icon: LayoutDashboard, link: "/" },
@@ -20,7 +23,7 @@ const menuItems = [
   { name: "Locations", icon: MapPin, link: "/locations" },
   { name: "Transactions", icon: WalletCards, link: "/transactions" },
   { name: "Team", icon: Users, link: "/team" },
-  // { name: "Notifications", icon: Bell, link: "/notifications" },
+  { name: "Notifications", icon: Bell, link: "/notifications" },
   // { name: "Settings", icon: Settings, link: "/settings" },
 ];
 
@@ -28,6 +31,7 @@ const Sidebar = () => {
   const [isExpanded, setIsExpanded] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
+  const {user, logOut} = useContext(LoginContext) as LoginContextType;
 
   const handleNavigation = (link: string) => {
     router.push(link);
@@ -203,7 +207,7 @@ const Sidebar = () => {
                   exit="collapsed"
                   className="ml-3"
                 >
-                  <p className="text-sm font-medium text-white">Alex Morgan</p>
+                  <p className="text-sm font-medium text-white">{user.fullName}</p>
                   <p className="text-xs text-zinc-400">Administrator</p>
                 </motion.div>
               )}
@@ -218,7 +222,7 @@ const Sidebar = () => {
                 exit="collapsed"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
-                onClick={() => alert("Logged out")}
+                onClick={() => logOut()}
                 className="p-2 hover:bg-white/5 rounded-lg transition-colors"
               >
                 <LogOut className="w-5 h-5 text-zinc-400" />

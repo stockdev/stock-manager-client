@@ -19,7 +19,8 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-toastify": "^11.0.3",
-    "recharts": "^2.15.0"
+    "recharts": "^2.15.0",
+    "sonner": "^1.7.2"
   },
   "devDependencies": {
     "@types/js-cookie": "^3.0.6",
