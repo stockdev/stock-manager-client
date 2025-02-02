@@ -1,91 +1,306 @@
+// pages/ArticlePage.tsx
 "use client";
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Search, Upload, Trash2, ArrowUpDown, X } from 'lucide-react';
+import React, { useState, useEffect, useContext } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Plus,
+  Search,
+  Trash2,
+  ArrowUpDown,
+  X,
+  Upload,
+} from "lucide-react";
+import { toast } from "sonner";
+import { LoginContext } from "@/core/context/LoginProvider";
+import ArticleService from "@/core/articles/service/ArticleService";
+import LoginContextType from "@/core/context/LoginContextType";
+import { ToastMessage } from "@/core/toast/ToastMessage";
+import { ImportModal } from "@/components/ImportForm";
+import Article from "@/core/articles/model/Article";
+import { CreateArticleRequest } from "@/core/articles/dto/CreateArticleRequest";
+import { UpdateArticleRequest } from "@/core/articles/dto/UpdateArticleRequest";
 
-interface Article {
-  id: number;
-  code: string;
-  name: string;
-}
 
-interface CreateArticleRequest {
-  name: string;
-  code: string;
-}
 
-interface UpdateArticleRequest {
-  name: string;
-  code: string;
-}
-
-const mockArticles: Article[] = [
-  {
-    id: 1,
-    code: "ART001",
-    name: "Article 1"
-  },
-  {
-    id: 2,
-    code: "ART002",
-    name: "Article 2"
-  }
-];
 
 export default function ArticlePage() {
-  const [searchTerm, setSearchTerm] = useState('');
+  const { user } = useContext(LoginContext) as LoginContextType;
+  const articleService = new ArticleService();
+
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleteAllDialogOpen, setIsDeleteAllDialogOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
-  const [createForm, setCreateForm] = useState<CreateArticleRequest>({ name: '', code: '' });
-  const [updateForm, setUpdateForm] = useState<UpdateArticleRequest>({ name: '', code: '' });
+  const [createForm, setCreateForm] = useState<CreateArticleRequest>({
+    name: "",
+    code: "",
+  });
+  const [updateForm, setUpdateForm] = useState<UpdateArticleRequest>({
+    name: "",
+    code: "",
+  });
   const [sortConfig, setSortConfig] = useState<{
     key: keyof Article | null;
-    direction: 'asc' | 'desc';
-  }>({ key: null, direction: 'asc' });
+    direction: "asc" | "desc";
+  }>({ key: null, direction: "asc" });
+
+  // Stări pentru importul fișierului
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const isAdmin = user?.userRole === "ADMIN";
+
+  useEffect(() => {
+    fetchArticles();
+  }, []);
+
+  const fetchArticles = async () => {
+    try {
+      const response = await articleService.getAllArticles();
+      if (typeof response !== "string") {
+        setArticles(response.list || []);
+      } else {
+        toast.custom((t) => (
+          <ToastMessage
+            type="error"
+            title="Error"
+            message={response}
+            onClose={() => toast.dismiss(t)}
+          />
+        ));
+      }
+    } catch (error) {
+      toast.custom((t) => (
+        <ToastMessage
+          type="error"
+          title="Error"
+          message="Failed to fetch articles"
+          onClose={() => toast.dismiss(t)}
+        />
+      ));
+    }
+  };
 
   const handleSort = (key: keyof Article) => {
     setSortConfig({
       key,
       direction:
-        sortConfig.key === key && sortConfig.direction === 'asc'
-          ? 'desc'
-          : 'asc',
+        sortConfig.key === key && sortConfig.direction === "asc"
+          ? "desc"
+          : "asc",
     });
   };
 
-  const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      console.log('Importing file:', file.name);
+  // Funcțiile pentru import folosind ImportModal
+  const onFileSelect = (file: File | null) => {
+    setSelectedFile(file);
+  };
+
+  const onCancelImport = () => {
+    setIsImportModalOpen(false);
+    setSelectedFile(null);
+  };
+
+  const onImport = async () => {
+    if (!selectedFile || !user || !user.jwtToken) return;
+
+    try {
+      // Apelează logica ta de import (exemplu: articleService.importArticles)
+      console.log("Importing file:", selectedFile.name);
+      toast.custom((t) => (
+        <ToastMessage
+          type="success"
+          title="Success"
+          message={`File "${selectedFile.name}" imported successfully!`}
+          onClose={() => toast.dismiss(t)}
+        />
+      ));
+      setIsImportModalOpen(false);
+      setSelectedFile(null);
+      fetchArticles(); // Actualizează lista de articole după import
+    } catch (error) {
+      toast.custom((t) => (
+        <ToastMessage
+          type="error"
+          title="Error"
+          message="Failed to import file"
+          onClose={() => toast.dismiss(t)}
+        />
+      ));
     }
   };
 
-  const handleDeleteAll = () => {
-    if (window.confirm('Are you sure you want to delete all articles? This action cannot be undone.')) {
-      console.log('Deleting all articles');
+  const onDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const onDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const onDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      setSelectedFile(e.dataTransfer.files[0]);
     }
   };
 
-  const handleCreateSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('Creating article:', createForm);
-    setIsCreateModalOpen(false);
-    setCreateForm({ name: '', code: '' });
+  const handleDeleteAllConfirmed = async () => {
+    if (!user || !user.jwtToken) return;
+    try {
+      const response = await articleService.deleteAllArticles(user.jwtToken);
+      if (typeof response === "string" && response !== "Article not found") {
+        toast.custom((t) => (
+          <ToastMessage
+            type="success"
+            title="Success"
+            message="All articles deleted successfully"
+            onClose={() => toast.dismiss(t)}
+          />
+        ));
+        fetchArticles();
+      } else {
+        toast.custom((t) => (
+          <ToastMessage
+            type="error"
+            title="Error"
+            message={response}
+            onClose={() => toast.dismiss(t)}
+          />
+        ));
+      }
+    } catch (error) {
+      toast.custom((t) => (
+        <ToastMessage
+          type="error"
+          title="Error"
+          message="Failed to delete all articles"
+          onClose={() => toast.dismiss(t)}
+        />
+      ));
+    }
+    setIsDeleteAllDialogOpen(false);
   };
 
-  const handleUpdateSubmit = (e: React.FormEvent) => {
+  const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Updating article:', updateForm);
-    setIsUpdateModalOpen(false);
-    setUpdateForm({ name: '', code: '' });
+    if (!user || !user.jwtToken) return;
+
+    try {
+      const response = await articleService.createArticle(
+        createForm,
+        user.jwtToken
+      );
+      toast.custom((t) => (
+        <ToastMessage
+          type={typeof response === "string" ? "error" : "success"}
+          title={typeof response === "string" ? "Error" : "Success"}
+          message={
+            typeof response === "string"
+              ? response
+              : `Article "${response.name}" created successfully!`
+          }
+          onClose={() => toast.dismiss(t)}
+        />
+      ));
+      if (typeof response !== "string") {
+        setIsCreateModalOpen(false);
+        setCreateForm({ name: "", code: "" });
+        fetchArticles();
+      }
+    } catch {
+      toast.custom((t) => (
+        <ToastMessage
+          type="error"
+          title="Error"
+          message="Failed to create article"
+          onClose={() => toast.dismiss(t)}
+        />
+      ));
+    }
   };
 
-  const handleDelete = () => {
-    console.log('Deleting article:', selectedArticle?.code);
-    setIsDeleteDialogOpen(false);
-    setSelectedArticle(null);
+  const handleUpdateSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedArticle) return;
+
+    try {
+      const response = await articleService.updateArticle(
+        selectedArticle.id,
+        updateForm,
+        user.jwtToken
+      );
+      if (typeof response !== "string") {
+        toast.custom((t) => (
+          <ToastMessage
+            type="success"
+            title="Success"
+            message="Article updated successfully"
+            onClose={() => toast.dismiss(t)}
+          />
+        ));
+        setIsUpdateModalOpen(false);
+        setUpdateForm({ name: "", code: "" });
+        fetchArticles();
+      } else {
+        toast.custom((t) => (
+          <ToastMessage
+            type="error"
+            title="Error"
+            message={response}
+            onClose={() => toast.dismiss(t)}
+          />
+        ));
+      }
+    } catch (error) {
+      toast.custom((t) => (
+        <ToastMessage
+          type="error"
+          title="Error"
+          message="Failed to update article"
+          onClose={() => toast.dismiss(t)}
+        />
+      ));
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedArticle) return;
+
+    try {
+      const response = await articleService.deleteArticleByCode(
+        selectedArticle.code,
+        user.jwtToken
+      );
+      toast.custom((t) => (
+        <ToastMessage
+          type="success"
+          title="Success"
+          message={response}
+          onClose={() => toast.dismiss(t)}
+        />
+      ));
+      setIsDeleteDialogOpen(false);
+      setSelectedArticle(null);
+      fetchArticles();
+    } catch (error) {
+      toast.custom((t) => (
+        <ToastMessage
+          type="error"
+          title="Error"
+          message={(error as Error).message || "Failed to delete article"}
+          onClose={() => toast.dismiss(t)}
+        />
+      ));
+    }
   };
 
   const openUpdateModal = (article: Article) => {
@@ -97,8 +312,26 @@ export default function ArticlePage() {
   const modalVariants = {
     hidden: { opacity: 0, scale: 0.95 },
     visible: { opacity: 1, scale: 1 },
-    exit: { opacity: 0, scale: 0.95 }
+    exit: { opacity: 0, scale: 0.95 },
   };
+
+  const filteredArticles = articles.filter(
+    (article) =>
+      article.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      article.code.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Sort articles
+  const sortedArticles = [...filteredArticles].sort((a, b) => {
+    if (!sortConfig.key) return 0;
+
+    const aValue = a[sortConfig.key];
+    const bValue = b[sortConfig.key];
+
+    if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
+    if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
+    return 0;
+  });
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white p-8">
@@ -138,38 +371,37 @@ export default function ArticlePage() {
             className="w-full pl-10 pr-4 py-2 bg-zinc-900/50 border border-zinc-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-sm text-zinc-200 placeholder-zinc-500"
           />
         </div>
-        <div className="flex gap-2 flex-wrap">
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => setIsCreateModalOpen(true)}
-            className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg hover:from-blue-600 hover:to-purple-600 transition-colors flex items-center gap-2 text-sm font-medium"
-          >
-            <Plus className="w-4 h-4" />
-            Add Article
-          </motion.button>
-          
-          <label className="px-4 py-2 bg-emerald-500/20 text-emerald-400 rounded-lg hover:bg-emerald-500/30 transition-colors flex items-center gap-2 text-sm font-medium cursor-pointer">
-            <Upload className="w-4 h-4" />
-            Import Excel
-            <input
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={handleFileImport}
-              className="hidden"
-            />
-          </label>
-
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handleDeleteAll}
-            className="px-4 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors flex items-center gap-2 text-sm font-medium"
-          >
-            <Trash2 className="w-4 h-4" />
-            Delete All
-          </motion.button>
-        </div>
+        {isAdmin && (
+          <div className="flex gap-2 flex-wrap">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setIsCreateModalOpen(true)}
+              className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg hover:from-blue-600 hover:to-purple-600 transition-colors flex items-center gap-2 text-sm font-medium"
+            >
+              <Plus className="w-4 h-4" />
+              Add Article
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setIsImportModalOpen(true)}
+              className="px-4 py-2 bg-emerald-500/20 text-emerald-400 rounded-lg hover:bg-emerald-500/30 transition-colors flex items-center gap-2 text-sm font-medium"
+            >
+              <Upload className="w-4 h-4" />
+              Import Excel
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setIsDeleteAllDialogOpen(true)}
+              className="px-4 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors flex items-center gap-2 text-sm font-medium"
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete All
+            </motion.button>
+          </div>
+        )}
       </motion.div>
 
       {/* Table */}
@@ -185,7 +417,16 @@ export default function ArticlePage() {
               <tr className="border-b border-zinc-800">
                 <th className="px-6 py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
                   <button
-                    onClick={() => handleSort('code')}
+                    onClick={() => handleSort("id")}
+                    className="flex items-center gap-2 hover:text-zinc-200"
+                  >
+                    Id
+                    <ArrowUpDown className="w-4 h-4" />
+                  </button>
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                  <button
+                    onClick={() => handleSort("code")}
                     className="flex items-center gap-2 hover:text-zinc-200"
                   >
                     Code
@@ -194,52 +435,59 @@ export default function ArticlePage() {
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
                   <button
-                    onClick={() => handleSort('name')}
+                    onClick={() => handleSort("name")}
                     className="flex items-center gap-2 hover:text-zinc-200"
                   >
                     Name
                     <ArrowUpDown className="w-4 h-4" />
                   </button>
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
-                  Actions
-                </th>
+                {isAdmin && (
+                  <th className="px-6 py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                    Actions
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800">
-              {mockArticles.map((article) => (
+              {sortedArticles.map((article) => (
                 <motion.tr
                   key={article.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  whileHover={{ backgroundColor: 'rgba(255, 255, 255, 0.02)' }}
+                  whileHover={{ backgroundColor: "rgba(255, 255, 255, 0.02)" }}
                   className="group"
                 >
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-300">
+                    {article.id}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-300">
                     {article.code}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-300">
                     {article.name}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-300">
-                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => openUpdateModal(article)}
-                        className="px-3 py-1 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20 transition-colors"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSelectedArticle(article);
-                          setIsDeleteDialogOpen(true);
-                        }}
-                        className="px-3 py-1 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 transition-colors"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
+                  {isAdmin && (
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-300">
+                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => openUpdateModal(article)}
+                          className="px-3 py-1 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20 transition-colors"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedArticle(article);
+                            setIsDeleteDialogOpen(true);
+                          }}
+                          className="px-3 py-1 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  )}
                 </motion.tr>
               ))}
             </tbody>
@@ -275,7 +523,9 @@ export default function ArticlePage() {
                       type="text"
                       required
                       value={createForm.code}
-                      onChange={(e) => setCreateForm({ ...createForm, code: e.target.value })}
+                      onChange={(e) =>
+                        setCreateForm({ ...createForm, code: e.target.value })
+                      }
                       className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                     />
                   </div>
@@ -287,7 +537,9 @@ export default function ArticlePage() {
                       type="text"
                       required
                       value={createForm.name}
-                      onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+                      onChange={(e) =>
+                        setCreateForm({ ...createForm, name: e.target.value })
+                      }
                       className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                     />
                   </div>
@@ -334,7 +586,9 @@ export default function ArticlePage() {
                       type="text"
                       required
                       value={updateForm.code}
-                      onChange={(e) => setUpdateForm({ ...updateForm, code: e.target.value })}
+                      onChange={(e) =>
+                        setUpdateForm({ ...updateForm, code: e.target.value })
+                      }
                       className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                     />
                   </div>
@@ -346,7 +600,9 @@ export default function ArticlePage() {
                       type="text"
                       required
                       value={updateForm.name}
-                      onChange={(e) => setUpdateForm({ ...updateForm, name: e.target.value })}
+                      onChange={(e) =>
+                        setUpdateForm({ ...updateForm, name: e.target.value })
+                      }
                       className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                     />
                   </div>
@@ -365,7 +621,7 @@ export default function ArticlePage() {
         )}
       </AnimatePresence>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Confirmation Dialog for un articol */}
       <AnimatePresence>
         {isDeleteDialogOpen && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
@@ -378,9 +634,11 @@ export default function ArticlePage() {
             >
               <h2 className="text-xl font-semibold mb-4">Confirm Deletion</h2>
               <p className="text-zinc-400 mb-6">
-                Are you sure you want to delete the article with code{' '}
-                <span className="text-red-400 font-semibold">{selectedArticle?.code}</span>?
-                This action cannot be undone.
+                Are you sure you want to delete the article with code{" "}
+                <span className="text-red-400 font-semibold">
+                  {selectedArticle?.code}
+                </span>
+                ? This action cannot be undone.
               </p>
               <div className="flex gap-4">
                 <motion.button
@@ -404,6 +662,57 @@ export default function ArticlePage() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Delete All Confirmation Dialog */}
+      <AnimatePresence>
+        {isDeleteAllDialogOpen && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+            <motion.div
+              variants={modalVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 w-full max-w-md"
+            >
+              <h2 className="text-xl font-semibold mb-4">Confirm Delete All</h2>
+              <p className="text-zinc-400 mb-6">
+                Are you sure you want to delete all articles? This action cannot
+                be undone.
+              </p>
+              <div className="flex gap-4">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setIsDeleteAllDialogOpen(false)}
+                  className="flex-1 px-4 py-2 bg-zinc-800 rounded-lg hover:bg-zinc-700 transition-colors"
+                >
+                  Cancel
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleDeleteAllConfirmed}
+                  className="flex-1 px-4 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors"
+                >
+                  Delete All
+                </motion.button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <ImportModal
+        isOpen={isImportModalOpen}
+        selectedFile={selectedFile}
+        onFileSelect={onFileSelect}
+        onCancel={onCancelImport}
+        onImport={onImport}
+        isDragging={isDragging}
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
+      />
     </div>
   );
 }

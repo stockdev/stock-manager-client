@@ -32,12 +32,14 @@ const mockLocation: Location[] = [
   },
 ];
 
-export default function  LocationPage() {
+export default function LocationPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedLocation, setSelectedLocation] = useState< Location | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<Location | null>(
+    null
+  );
   const [createForm, setCreateForm] = useState<CreateLocationRequest>({
     name: "",
     code: "",
@@ -274,7 +276,9 @@ export default function  LocationPage() {
               >
                 <X className="w-5 h-5" />
               </button>
-              <h2 className="text-xl font-semibold mb-4">Create New Location</h2>
+              <h2 className="text-xl font-semibold mb-4">
+                Create New Location
+              </h2>
               <form onSubmit={handleCreateSubmit}>
                 <div className="space-y-4">
                   <div>
