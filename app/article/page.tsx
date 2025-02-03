@@ -1,4 +1,3 @@
-// pages/ArticlePage.tsx
 "use client";
 import React, { useState, useEffect, useContext } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -9,6 +8,8 @@ import {
   ArrowUpDown,
   X,
   Upload,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { LoginContext } from "@/core/context/LoginProvider";
@@ -19,9 +20,8 @@ import { ImportModal } from "@/components/ImportForm";
 import Article from "@/core/articles/model/Article";
 import { CreateArticleRequest } from "@/core/articles/dto/CreateArticleRequest";
 import { UpdateArticleRequest } from "@/core/articles/dto/UpdateArticleRequest";
-
-
-
+import { ImportResponse } from "@/core/articles/dto/ImportResponse";
+import LoadingOverlay from "@/components/LoadingOverlay";
 
 export default function ArticlePage() {
   const { user } = useContext(LoginContext) as LoginContextType;
@@ -49,9 +49,18 @@ export default function ArticlePage() {
     direction: "asc" | "desc";
   }>({ key: null, direction: "asc" });
 
-  // Stări pentru importul fișierului
+  // Loading states for "Delete All" and "Import" actions
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+
+  // Drag & Drop + File Selection States
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(50);
+  const pageSizeOptions = [50, 100, 150, 250, 500];
 
   const isAdmin = user?.userRole === "ADMIN";
 
@@ -86,6 +95,15 @@ export default function ArticlePage() {
     }
   };
 
+  // ================== Sorting & Pagination ===================
+  // Filter
+  const filteredArticles = articles.filter(
+    (article) =>
+      article.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      article.code.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Sort
   const handleSort = (key: keyof Article) => {
     setSortConfig({
       key,
@@ -94,9 +112,34 @@ export default function ArticlePage() {
           ? "desc"
           : "asc",
     });
+    setCurrentPage(1); // reset to page 1 after sorting
   };
 
-  // Funcțiile pentru import folosind ImportModal
+  const sortedArticles = [...filteredArticles].sort((a, b) => {
+    if (!sortConfig.key) return 0;
+    const aValue = a[sortConfig.key];
+    const bValue = b[sortConfig.key];
+    if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
+    if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
+    return 0;
+  });
+
+  // Pagination
+  const totalPages = Math.ceil(sortedArticles.length / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const currentArticles = sortedArticles.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handlePageSizeChange = (size: number) => {
+    setPageSize(size);
+    setCurrentPage(1);
+  };
+
+  // ================== Import Excel ===================
   const onFileSelect = (file: File | null) => {
     setSelectedFile(file);
   };
@@ -108,21 +151,39 @@ export default function ArticlePage() {
 
   const onImport = async () => {
     if (!selectedFile || !user || !user.jwtToken) return;
+    setIsImporting(true); // show loader
 
     try {
-      // Apelează logica ta de import (exemplu: articleService.importArticles)
-      console.log("Importing file:", selectedFile.name);
-      toast.custom((t) => (
-        <ToastMessage
-          type="success"
-          title="Success"
-          message={`File "${selectedFile.name}" imported successfully!`}
-          onClose={() => toast.dismiss(t)}
-        />
-      ));
+      const response = await articleService.importArticlesFromExcel(
+        selectedFile,
+        user.jwtToken
+      );
+
+      if (typeof response === "string") {
+        // It's an error
+        toast.custom((t) => (
+          <ToastMessage
+            type="error"
+            title="Import Error"
+            message={response}
+            onClose={() => toast.dismiss(t)}
+          />
+        ));
+      } else {
+        // It's an ImportResponse
+        const importResult = response as ImportResponse;
+        toast.custom((t) => (
+          <ToastMessage
+            type="success"
+            title="Import Success"
+            message={`File "${selectedFile.name}" imported successfully! Imported: ${importResult.importedCount}, Skipped: ${importResult.skippedRows.length}.`}
+            onClose={() => toast.dismiss(t)}
+          />
+        ));
+      }
       setIsImportModalOpen(false);
       setSelectedFile(null);
-      fetchArticles(); // Actualizează lista de articole după import
+      fetchArticles();
     } catch (error) {
       toast.custom((t) => (
         <ToastMessage
@@ -132,6 +193,8 @@ export default function ArticlePage() {
           onClose={() => toast.dismiss(t)}
         />
       ));
+    } finally {
+      setIsImporting(false); // hide loader
     }
   };
 
@@ -153,8 +216,11 @@ export default function ArticlePage() {
     }
   };
 
+  // ================== Delete All Articles ===================
   const handleDeleteAllConfirmed = async () => {
     if (!user || !user.jwtToken) return;
+    setIsDeletingAll(true); // show loader
+
     try {
       const response = await articleService.deleteAllArticles(user.jwtToken);
       if (typeof response === "string" && response !== "Article not found") {
@@ -186,10 +252,13 @@ export default function ArticlePage() {
           onClose={() => toast.dismiss(t)}
         />
       ));
+    } finally {
+      setIsDeletingAll(false); // hide loader
+      setIsDeleteAllDialogOpen(false);
     }
-    setIsDeleteAllDialogOpen(false);
   };
 
+  // ================== Create/Update/Delete Single Article ===================
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !user.jwtToken) return;
@@ -230,7 +299,7 @@ export default function ArticlePage() {
 
   const handleUpdateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedArticle) return;
+    if (!selectedArticle || !user?.jwtToken) return;
 
     try {
       const response = await articleService.updateArticle(
@@ -273,7 +342,7 @@ export default function ArticlePage() {
   };
 
   const handleDelete = async () => {
-    if (!selectedArticle) return;
+    if (!selectedArticle || !user?.jwtToken) return;
 
     try {
       const response = await articleService.deleteArticleByCode(
@@ -315,27 +384,10 @@ export default function ArticlePage() {
     exit: { opacity: 0, scale: 0.95 },
   };
 
-  const filteredArticles = articles.filter(
-    (article) =>
-      article.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      article.code.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  // Sort articles
-  const sortedArticles = [...filteredArticles].sort((a, b) => {
-    if (!sortConfig.key) return 0;
-
-    const aValue = a[sortConfig.key];
-    const bValue = b[sortConfig.key];
-
-    if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
-    if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
-    return 0;
-  });
-
   return (
     <div className="min-h-screen bg-zinc-950 text-white p-8">
-      {/* Header Section */}
+      <LoadingOverlay isVisible={isDeletingAll || isImporting} />
+
       <div className="mb-8">
         <motion.h1
           initial={{ opacity: 0, y: -20 }}
@@ -361,6 +413,7 @@ export default function ArticlePage() {
         transition={{ delay: 0.2 }}
         className="flex flex-col sm:flex-row gap-4 mb-6"
       >
+        {/* Search input */}
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-zinc-400 w-4 h-4" />
           <input
@@ -371,31 +424,50 @@ export default function ArticlePage() {
             className="w-full pl-10 pr-4 py-2 bg-zinc-900/50 border border-zinc-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-sm text-zinc-200 placeholder-zinc-500"
           />
         </div>
+
+        {/* Admin-Only Actions */}
         {isAdmin && (
           <div className="flex gap-2 flex-wrap">
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
+              disabled={isDeletingAll || isImporting}
               onClick={() => setIsCreateModalOpen(true)}
-              className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg hover:from-blue-600 hover:to-purple-600 transition-colors flex items-center gap-2 text-sm font-medium"
+              className={`px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg transition-colors flex items-center gap-2 text-sm font-medium ${
+                isDeletingAll || isImporting
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:from-blue-600 hover:to-purple-600"
+              }`}
             >
               <Plus className="w-4 h-4" />
               Add Article
             </motion.button>
+
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
+              disabled={isDeletingAll || isImporting}
               onClick={() => setIsImportModalOpen(true)}
-              className="px-4 py-2 bg-emerald-500/20 text-emerald-400 rounded-lg hover:bg-emerald-500/30 transition-colors flex items-center gap-2 text-sm font-medium"
+              className={`px-4 py-2 bg-emerald-500/20 text-emerald-400 rounded-lg transition-colors flex items-center gap-2 text-sm font-medium ${
+                isDeletingAll || isImporting
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:bg-emerald-500/30"
+              }`}
             >
               <Upload className="w-4 h-4" />
               Import Excel
             </motion.button>
+
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
+              disabled={isDeletingAll || isImporting}
               onClick={() => setIsDeleteAllDialogOpen(true)}
-              className="px-4 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors flex items-center gap-2 text-sm font-medium"
+              className={`px-4 py-2 bg-red-500/20 text-red-400 rounded-lg transition-colors flex items-center gap-2 text-sm font-medium ${
+                isDeletingAll || isImporting
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:bg-red-500/30"
+              }`}
             >
               <Trash2 className="w-4 h-4" />
               Delete All
@@ -449,8 +521,9 @@ export default function ArticlePage() {
                 )}
               </tr>
             </thead>
+
             <tbody className="divide-y divide-zinc-800">
-              {sortedArticles.map((article) => (
+              {currentArticles.map((article) => (
                 <motion.tr
                   key={article.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -472,7 +545,12 @@ export default function ArticlePage() {
                       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => openUpdateModal(article)}
-                          className="px-3 py-1 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20 transition-colors"
+                          disabled={isDeletingAll || isImporting}
+                          className={`px-3 py-1 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20 transition-colors ${
+                            isDeletingAll || isImporting
+                              ? "opacity-50 cursor-not-allowed"
+                              : ""
+                          }`}
                         >
                           Edit
                         </button>
@@ -481,7 +559,12 @@ export default function ArticlePage() {
                             setSelectedArticle(article);
                             setIsDeleteDialogOpen(true);
                           }}
-                          className="px-3 py-1 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 transition-colors"
+                          disabled={isDeletingAll || isImporting}
+                          className={`px-3 py-1 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 transition-colors ${
+                            isDeletingAll || isImporting
+                              ? "opacity-50 cursor-not-allowed"
+                              : ""
+                          }`}
                         >
                           Delete
                         </button>
@@ -492,6 +575,90 @@ export default function ArticlePage() {
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Pagination Footer */}
+        <div className="px-6 py-4 border-t border-zinc-800 flex flex-col sm:flex-row justify-between items-center gap-4">
+          {/* Page Size Selector */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-zinc-400">Items per page:</span>
+            <select
+              value={pageSize}
+              onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+              className="bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+              disabled={isDeletingAll || isImporting}
+            >
+              {pageSizeOptions.map((size) => (
+                <option key={size} value={size}>
+                  {size}
+                </option>
+              ))}
+            </select>
+            <span className="text-sm text-zinc-400">
+              Showing {startIndex + 1}-
+              {Math.min(endIndex, sortedArticles.length)} of{" "}
+              {sortedArticles.length}
+            </span>
+          </div>
+
+          {/* Pagination Controls */}
+          <div className="flex items-center gap-2">
+            {/* Previous Page */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1 || isDeletingAll || isImporting}
+              className={`p-1 rounded-lg ${
+                currentPage === 1 || isDeletingAll || isImporting
+                  ? "text-zinc-600 cursor-not-allowed"
+                  : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+              }`}
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </motion.button>
+
+            {/* Page Numbers */}
+            <div className="flex items-center gap-1">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                (page) => (
+                  <motion.button
+                    key={page}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => handlePageChange(page)}
+                    disabled={isDeletingAll || isImporting}
+                    className={`px-3 py-1 rounded-lg text-sm ${
+                      currentPage === page
+                        ? "bg-blue-500 text-white"
+                        : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                    } ${
+                      isDeletingAll || isImporting
+                        ? "opacity-50 cursor-not-allowed"
+                        : ""
+                    }`}
+                  >
+                    {page}
+                  </motion.button>
+                )
+              )}
+            </div>
+
+            {/* Next Page */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages || isDeletingAll || isImporting}
+              className={`p-1 rounded-lg ${
+                currentPage === totalPages || isDeletingAll || isImporting
+                  ? "text-zinc-600 cursor-not-allowed"
+                  : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+              }`}
+            >
+              <ChevronRight className="w-5 h-5" />
+            </motion.button>
+          </div>
         </div>
       </motion.div>
 
@@ -547,7 +714,12 @@ export default function ArticlePage() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     type="submit"
-                    className="w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg hover:from-blue-600 hover:to-purple-600 transition-colors"
+                    disabled={isDeletingAll || isImporting}
+                    className={`w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg transition-colors ${
+                      isDeletingAll || isImporting
+                        ? "opacity-50 cursor-not-allowed"
+                        : "hover:from-blue-600 hover:to-purple-600"
+                    }`}
                   >
                     Create Article
                   </motion.button>
@@ -610,7 +782,12 @@ export default function ArticlePage() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     type="submit"
-                    className="w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg hover:from-blue-600 hover:to-purple-600 transition-colors"
+                    disabled={isDeletingAll || isImporting}
+                    className={`w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg transition-colors ${
+                      isDeletingAll || isImporting
+                        ? "opacity-50 cursor-not-allowed"
+                        : "hover:from-blue-600 hover:to-purple-600"
+                    }`}
                   >
                     Update Article
                   </motion.button>
@@ -621,7 +798,7 @@ export default function ArticlePage() {
         )}
       </AnimatePresence>
 
-      {/* Delete Confirmation Dialog for un articol */}
+      {/* Delete Confirmation Dialog for one article */}
       <AnimatePresence>
         {isDeleteDialogOpen && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
@@ -653,7 +830,10 @@ export default function ArticlePage() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={handleDelete}
-                  className="flex-1 px-4 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors"
+                  disabled={isDeletingAll || isImporting}
+                  className={`flex-1 px-4 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors ${
+                    isDeletingAll || isImporting ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
                 >
                   Delete
                 </motion.button>
@@ -692,7 +872,12 @@ export default function ArticlePage() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={handleDeleteAllConfirmed}
-                  className="flex-1 px-4 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors"
+                  disabled={isDeletingAll || isImporting}
+                  className={`flex-1 px-4 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors ${
+                    isDeletingAll || isImporting
+                      ? "opacity-50 cursor-not-allowed"
+                      : ""
+                  }`}
                 >
                   Delete All
                 </motion.button>
@@ -702,6 +887,7 @@ export default function ArticlePage() {
         )}
       </AnimatePresence>
 
+      {/* Import Excel Modal */}
       <ImportModal
         isOpen={isImportModalOpen}
         selectedFile={selectedFile}
@@ -716,3 +902,5 @@ export default function ArticlePage() {
     </div>
   );
 }
+
+

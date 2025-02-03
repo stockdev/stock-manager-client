@@ -208,7 +208,7 @@ const Sidebar = () => {
                   className="ml-3"
                 >
                   <p className="text-sm font-medium text-white">{user.fullName}</p>
-                  <p className="text-xs text-zinc-400">Administrator</p>
+                  <p className="text-xs text-zinc-400">{user.userRole}</p>
                 </motion.div>
               )}
             </AnimatePresence>

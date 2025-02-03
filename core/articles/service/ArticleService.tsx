@@ -3,9 +3,50 @@ import { ArticleResponse } from "../dto/ArticleResponse";
 import { ArticleResponseList } from "../dto/ArticleResponseList";
 import { CreateArticleRequest } from "../dto/CreateArticleRequest";
 import { UpdateArticleRequest } from "../dto/UpdateArticleRequest";
-import { a, b } from "framer-motion/client";
+import { ImportResponse } from "../dto/ImportResponse";
 
 class ArticleService extends ApiServer {
+  /**
+   * Import articles from an Excel file (Multipart/form-data).
+   * @param file  The Excel file to upload
+   * @param token The JWT token with Admin privileges
+   * @returns     An ImportResponse object or an error message string
+   */
+  importArticlesFromExcel = async (
+    file: File,
+    token: string
+  ): Promise<ImportResponse | string> => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await this.api<FormData, ImportResponse>(
+      "/article/importExcel",
+      "POST",
+      formData,
+      token
+    );
+
+    if (response.status === 200) {
+      return (await response.json()) as ImportResponse;
+    } else if (response.status === 400) {
+      const errorMessage = await response.text();
+      return errorMessage || "Invalid request or file format.";
+    } else if (response.status === 403) {
+      const errorData = await response.json();
+      return (
+        errorData.message ||
+        "Access denied. Only admins can perform this action."
+      );
+    } else if (response.status === 401) {
+      const errorData = await response.json();
+      return errorData.message || "Unauthorized request. Please log in.";
+    } else {
+      return Promise.reject(
+        "An error occurred while importing articles from Excel."
+      );
+    }
+  };
+
   getArticleById = async (
     articleId: number
   ): Promise<ArticleResponse | string> => {

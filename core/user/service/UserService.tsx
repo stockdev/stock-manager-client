@@ -1,42 +1,73 @@
 import ApiServer from "@/core/system/service/ApiServer";
 import LoginRequest from "../dto/LoginRequest";
 import LoginResponse from "../dto/LoginResponse";
-
-
+import { CreateUserRequest } from "../dto/CreateUserRequest";
+import { UserResponse } from "../dto/UserResponse";
+import { UserResponseList } from "../dto/UserReponseList";
 class UserService extends ApiServer {
-  login = async (user: LoginRequest): Promise<LoginResponse|string> => {
+  login = async (user: LoginRequest): Promise<LoginResponse | string> => {
     const data = await this.api<LoginRequest, LoginResponse>(
       `/user/login`,
       "POST",
       user
     );
+
     if (data.status === 200) {
-      const user = await data.json();
-      return user;
-    } else if (data.status === 404) {
-      const message = await data.text();
-      return message;
-    }
-     else {
-      return Promise.reject([]);
+      return await data.json();
+    } else {
+      return await data.text();
     }
   };
 
-//   register = async(user : RegisterRequest):Promise<RegisterResponse> => {
-//     const data = await this.api<RegisterRequest, RegisterResponse>(
-//       `/register`,
-//       "POST",
-//       user,
-//       ""
-//     );
-//     if (data.status === 200) {
-//       const user = await data.json();
-//       return user;
-//     } else {
-//       return Promise.reject([]);
-//     }
-//   }
+  getAllUsers = async (token: string): Promise<UserResponseList> => {
+    const response = await this.api<null, UserResponseList>(
+      `/user/getAllUsers`,
+      "GET",
+      null,
+      token
+    );
+    if (response.status === 200) {
+      return await response.json();
+    } else {
+      throw new Error("Failed to fetch users.");
+    }
+  };
 
+  register = async (
+    user: CreateUserRequest,
+    token: string
+  ): Promise<UserResponse | string> => {
+    const response = await this.api<CreateUserRequest, UserResponse>(
+      `/user/register`,
+      "POST",
+      user,
+      token
+    );
+    if (response.status === 201) {
+      return await response.json();
+    } else if (response.status === 403) {
+      return await response.json();
+    } else {
+      return await response.text();
+    }
+  };
+
+  deleteUser = async (email: string, token: string): Promise<string> => {
+    const response = await this.api<null, string>(
+      `/user/delete/${email}`,
+      "DELETE",
+      null,
+      token
+    );
+
+    if (response.status === 200) {
+      return await response.text();
+    } else if (response.status === 403) {
+      return await response.json();
+    } else {
+      return await response.text();
+    }
+  };
 }
 
 export default UserService;
