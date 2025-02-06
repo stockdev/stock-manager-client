@@ -36,11 +36,14 @@ export function LocationsTable({ searchTerm }: LocationsTableProps) {
 
   const fetchLocations = async () => {
     try {
+      console.log("Fetching locations with:", { currentPage, pageSize, searchTerm });
       const response = await locationService.getAllLocations(
         currentPage - 1,
         pageSize,
         searchTerm
       );
+
+      console.log("Response:", response);
       if (typeof response !== "string") {
         setLocations(response.list || []);
         setTotalPages(response.totalPages);
