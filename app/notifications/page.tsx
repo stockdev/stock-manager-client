@@ -6,6 +6,7 @@ import { NotificationActionBar } from "@/core/notification/components/Notificati
 
 export default function NotificationPage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedType, setSelectedType] = useState(""); 
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white p-8">
@@ -13,8 +14,16 @@ export default function NotificationPage() {
         title="Notifications Management" 
         subtitle="Manage your system notifications" 
       />
-      <NotificationActionBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
-      <NotificationTable searchTerm={searchTerm} />
+      <NotificationActionBar 
+        searchTerm={searchTerm} 
+        setSearchTerm={setSearchTerm} 
+        selectedType={selectedType}
+        setSelectedType={setSelectedType}
+      />
+      <NotificationTable 
+        searchTerm={searchTerm} 
+        selectedType={selectedType}
+      />
     </div>
   );
 }

@@ -1,69 +1,83 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowUpDown, Bell, Info, AlertTriangle, AlertOctagon, User } from "lucide-react";
+import {
+  ArrowUpDown,
+  Bell,
+  Info,
+  AlertTriangle,
+  AlertOctagon,
+  User,
+} from "lucide-react";
 import { toast } from "sonner";
 import NotificationService from "@/core/notification/service/NotificationService";
 import LoadingOverlay from "@/shared/LoadingOverlay";
 import { NotificationType } from "@/core/notification/dto/NotificationType";
+import { Pagination } from "@/shared/Pagination";
+import NotificationResponse from "../dto/NotificationResponse";
+import NotificationResponseList from "../dto/NotificationResponseList";
 
 interface NotificationTableProps {
   searchTerm: string;
+  selectedType: string;
 }
 
-export const NotificationTable: React.FC<NotificationTableProps> = ({ searchTerm }) => {
-  const [notifications, setNotifications] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [sortConfig, setSortConfig] = useState<{ key: string | null; direction: "asc" | "desc" }>({ key: null, direction: "asc" });
+
+
+export const NotificationTable: React.FC<NotificationTableProps> = ({
+  searchTerm,
+  selectedType,
+}) => {
+  const [notifications, setNotifications] = useState<NotificationResponse[]>([]);
+  const [sortConfig, setSortConfig] = useState<{ key: string | null; direction: "asc" | "desc" }>({ 
+    key: "createdAt",
+    direction: "desc" 
+  });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10); 
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
 
   const notificationService = new NotificationService();
 
   const fetchNotifications = async () => {
-    setLoading(true);
     try {
-      const data = await notificationService.getAllNotifications();
-      if (typeof data !== "string") {
+      const response = await notificationService.getAllNotifications(
+        currentPage - 1,
+        pageSize,
+        searchTerm,
+        selectedType
+      );
+
+      if (response) {
+        const data = response as NotificationResponseList;
         setNotifications(data.list);
+        setTotalPages(data.totalPages);
+        setTotalItems(data.totalElements);
       } else {
-        toast.custom((t) => (
-          <div onClick={() => toast.dismiss(t)}>Error: {data}</div>
-        ));
+        toast.error("Failed to fetch notifications");
       }
     } catch (error: any) {
-      toast.custom((t) => (
-        <div onClick={() => toast.dismiss(t)}>
-          {error.message || "Failed to fetch notifications."}
-        </div>
-      ));
-    } finally {
-      setLoading(false);
+      toast.error(error.message || "Failed to fetch notifications");
     }
   };
 
   useEffect(() => {
+    setCurrentPage(1);
     fetchNotifications();
-  }, []);
+  }, [searchTerm, selectedType]);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [currentPage, pageSize, sortConfig.key, sortConfig.direction]);
 
   const handleSort = (key: string) => {
     setSortConfig((prev) => ({
       key,
       direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
     }));
+    setCurrentPage(1);
   };
-
-  // Filtrare simplă pe baza mesajului – se poate extinde pentru a integra filtrele din ActionBar
-  const filteredNotifications = notifications.filter((notification) =>
-    notification.message.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const sortedNotifications = [...filteredNotifications].sort((a, b) => {
-    if (!sortConfig.key) return 0;
-    const aVal = a[sortConfig.key];
-    const bVal = b[sortConfig.key];
-    if (aVal < bVal) return sortConfig.direction === "asc" ? -1 : 1;
-    if (aVal > bVal) return sortConfig.direction === "asc" ? 1 : -1;
-    return 0;
-  });
 
   const getNotificationStyles = (type: NotificationType) => {
     switch (type) {
@@ -92,7 +106,8 @@ export const NotificationTable: React.FC<NotificationTableProps> = ({ searchTerm
 
   return (
     <div className="mt-6">
-      {loading && <LoadingOverlay isVisible />}
+      <LoadingOverlay isVisible={false} />
+      
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -104,27 +119,43 @@ export const NotificationTable: React.FC<NotificationTableProps> = ({ searchTerm
             <thead>
               <tr className="border-b border-zinc-800">
                 <th className="px-6 py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
-                  Type
+                  <button 
+                    onClick={() => handleSort("notificationType")} 
+                    className="flex items-center gap-2 hover:text-zinc-200"
+                  >
+                    Type
+                    <ArrowUpDown className="w-4 h-4" />
+                  </button>
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
-                  <button onClick={() => handleSort("message")} className="flex items-center gap-2 hover:text-zinc-200">
+                  <button 
+                    onClick={() => handleSort("message")} 
+                    className="flex items-center gap-2 hover:text-zinc-200"
+                  >
                     Message
                     <ArrowUpDown className="w-4 h-4" />
                   </button>
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
-                  User
+                  <button 
+                    onClick={() => handleSort("user.fullName")} 
+                    className="flex items-center gap-2 hover:text-zinc-200"
+                  >
+                    User
+                    <ArrowUpDown className="w-4 h-4" />
+                  </button>
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800">
-              {sortedNotifications.map((notification) => {
+              {notifications.map((notification, index) => {
                 const { icon, colors } = getNotificationStyles(notification.notificationType);
                 return (
                   <motion.tr
-                    key={notification.id}
+                    key={index}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
                     className="group hover:bg-white/[0.02] transition-colors"
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -150,14 +181,42 @@ export const NotificationTable: React.FC<NotificationTableProps> = ({ searchTerm
             </tbody>
           </table>
         </div>
+
+        {totalPages > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            pageSizeOptions={[10, 25, 50, 100]}
+            totalItems={totalItems}
+            onPageChange={(page) => {
+              setCurrentPage(page);
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            onPageSizeChange={(size) => {
+              setPageSize(size);
+              setCurrentPage(1);
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+          />
+        )}
       </motion.div>
-      {sortedNotifications.length === 0 && !loading && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-12 text-center">
+
+      {notifications.length === 0 && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex flex-col items-center justify-center py-12 text-center"
+        >
           <div className="w-16 h-16 mb-4 rounded-full bg-zinc-900/50 flex items-center justify-center">
             <span>🔔</span>
           </div>
-          <h3 className="text-xl font-semibold text-zinc-300 mb-2">No notifications found</h3>
-          <p className="text-zinc-400">Try adjusting your search or filter criteria</p>
+          <h3 className="text-xl font-semibold text-zinc-300 mb-2">
+            No notifications found
+          </h3>
+          <p className="text-zinc-400">
+            Try adjusting your search or filter criteria
+          </p>
         </motion.div>
       )}
     </div>

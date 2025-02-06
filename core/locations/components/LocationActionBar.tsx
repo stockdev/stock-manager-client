@@ -101,7 +101,6 @@ export function LocationActionBar({ searchTerm, setSearchTerm }: LocationActionB
     }
   };
 
-  // Handler pentru ștergerea tuturor locațiilor
   const handleDeleteAll = async () => {
     if (!user?.jwtToken) return;
     setIsDeletingAll(true);

@@ -2,10 +2,28 @@ import ApiServer from "@/core/system/service/ApiServer";
 import NotificationResponseList from "../dto/NotificationResponseList";
 
 class NotificationService extends ApiServer {
+  getAllNotifications = async (
+    page: number = 0,
+    size: number = 50,
+    searchTerm?: string,
+    selectedType?: string
+  ): Promise<NotificationResponseList | string> => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      size: size.toString(),
+    });
 
-  getAllNotifications = async (): Promise<NotificationResponseList | string> => {
+    if (searchTerm && searchTerm.trim().length > 0) {
+      params.append("searchTerm", searchTerm);
+    }
+
+    if (selectedType && selectedType.trim().length > 0) {
+      params.append("selectedType", selectedType);
+    }
+
+    const endpoint = `/notification/getAllNotifications?${params.toString()}`;
     const response = await this.api<null, NotificationResponseList>(
-      "/notification/getAllNotifications",
+      endpoint,
       "GET",
       null
     );
@@ -17,7 +35,6 @@ class NotificationService extends ApiServer {
     }
   };
 
-  
   deleteAllNotifications = async (token: string): Promise<string> => {
     const response = await this.api<null, string>(
       "/notification/deleteAllNotifications",
