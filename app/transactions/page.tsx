@@ -4,8 +4,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
   Plus,
-  Package,
-  MapPin,
   ArrowUpDown,
   X,
   Edit,
@@ -31,6 +29,7 @@ export default function StockPage() {
   const { user } = useContext(LoginContext) as LoginContextType;
   const stockService = new StockService();
 
+  // State-uri pentru date și modale
   const [stocks, setStocks] = useState<Stock[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -41,6 +40,7 @@ export default function StockPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleteAllDialogOpen, setIsDeleteAllDialogOpen] = useState(false);
   const [selectedStock, setSelectedStock] = useState<Stock | null>(null);
   const [sortConfig, setSortConfig] = useState<{
     key: string | null;
@@ -50,17 +50,15 @@ export default function StockPage() {
     direction: "asc",
   });
 
-  const [formData, setFormData] = useState<
-    Partial<{
-      articleCode: string;
-      locationCode: string;
-      orderNumber: string;
-      quantity: number;
-      necessary: number;
-      stockType: StockType;
-      subStockType: SubStockType;
-    }>
-  >({});
+  const [formData, setFormData] = useState<Partial<{
+    articleCode: string;
+    locationCode: string;
+    orderNumber: string;
+    quantity: number;
+    necessary: number;
+    stockType: StockType;
+    subStockType: SubStockType;
+  }>>({});
 
   const modalVariants = {
     hidden: { opacity: 0, scale: 0.95 },
@@ -68,6 +66,7 @@ export default function StockPage() {
     exit: { opacity: 0, scale: 0.95 },
   };
 
+  // Funcția pentru preluarea tranzacțiilor
   const fetchStocks = async () => {
     setIsLoading(true);
     try {
@@ -143,8 +142,8 @@ export default function StockPage() {
         bVal = b.necessary;
         break;
       case "Id":
-        aVal = a.orderNumber;
-        bVal = b.orderNumber;
+        aVal = a.id;
+        bVal = b.id;
         break;
       default:
         return 0;
@@ -172,6 +171,7 @@ export default function StockPage() {
     setCurrentPage(page);
   };
 
+  // Funcția pentru importul fișierului Excel
   const handleFileImport = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -248,6 +248,7 @@ export default function StockPage() {
     setIsUpdateModalOpen(true);
   };
 
+  // Afișează opțiunile pentru SubStockType în funcție de StockType selectat
   const allowedSubStockTypes = (() => {
     if (formData.stockType === StockType.IN) {
       return Object.values(SubStockType).filter((s) => s !== SubStockType.P);
@@ -382,6 +383,7 @@ export default function StockPage() {
     }
   };
 
+  // Funcția pentru ștergerea unei tranzacții
   const handleDelete = async () => {
     if (selectedStock) {
       setIsDeleting(true);
@@ -424,6 +426,46 @@ export default function StockPage() {
       } finally {
         setIsDeleting(false);
       }
+    }
+  };
+
+  // Funcția pentru ștergerea tuturor tranzacțiilor
+  const handleDeleteAll = async () => {
+    setIsDeletingAll(true);
+    try {
+      const result = await stockService.deleteAllStocks(user.jwtToken);
+      if (typeof result !== "string" || result === "") {
+        toast.custom((t) => (
+          <ToastMessage
+            type="success"
+            title="Success"
+            message="All stock transactions have been deleted successfully"
+            onClose={() => toast.dismiss(t)}
+          />
+        ));
+        fetchStocks();
+        setIsDeleteAllDialogOpen(false);
+      } else {
+        toast.custom((t) => (
+          <ToastMessage
+            type="error"
+            title="Error"
+            message={result}
+            onClose={() => toast.dismiss(t)}
+          />
+        ));
+      }
+    } catch (err) {
+      toast.custom((t) => (
+        <ToastMessage
+          type="error"
+          title="Error"
+          message="An error occurred while deleting all stock transactions."
+          onClose={() => toast.dismiss(t)}
+        />
+      ));
+    } finally {
+      setIsDeletingAll(false);
     }
   };
 
@@ -485,22 +527,20 @@ export default function StockPage() {
               className="hidden"
             />
           </label>
-
-          
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        disabled={isDeletingAll || isImporting}
-                        // onClick={() => setIsDeleteAllDialogOpen(true)}
-                        className={`px-4 py-2 bg-red-500/20 text-red-400 rounded-lg transition-colors flex items-center gap-2 text-sm font-medium ${
-                          isDeletingAll || isImporting
-                            ? "opacity-50 cursor-not-allowed"
-                            : "hover:bg-red-500/30"
-                        }`}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        Delete All
-                      </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            disabled={isDeletingAll || isImporting}
+            onClick={() => setIsDeleteAllDialogOpen(true)}
+            className={`px-4 py-2 bg-red-500/20 text-red-400 rounded-lg transition-colors flex items-center gap-2 text-sm font-medium ${
+              isDeletingAll || isImporting
+                ? "opacity-50 cursor-not-allowed"
+                : "hover:bg-red-500/30"
+            }`}
+          >
+            <Trash2 className="w-4 h-4" />
+            Delete All
+          </motion.button>
         </div>
       </motion.div>
 
@@ -518,73 +558,49 @@ export default function StockPage() {
               <thead>
                 <tr className="border-b border-zinc-800">
                   <th className="px-6 py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
-                    <button
-                      onClick={() => handleSort("Id")}
-                      className="flex items-center gap-2 hover:text-zinc-200"
-                    >
+                    <button onClick={() => handleSort("Id")} className="flex items-center gap-2 hover:text-zinc-200">
                       Id
                       <ArrowUpDown className="w-4 h-4" />
                     </button>
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
-                    <button
-                      onClick={() => handleSort("transactionDate")}
-                      className="flex items-center gap-2 hover:text-zinc-200"
-                    >
+                    <button onClick={() => handleSort("transactionDate")} className="flex items-center gap-2 hover:text-zinc-200">
                       Date
                       <ArrowUpDown className="w-4 h-4" />
                     </button>
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
-                    <button
-                      onClick={() => handleSort("articleCode")}
-                      className="flex items-center gap-2 hover:text-zinc-200"
-                    >
+                    <button onClick={() => handleSort("articleCode")} className="flex items-center gap-2 hover:text-zinc-200">
                       Article Code
                       <ArrowUpDown className="w-4 h-4" />
                     </button>
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
-                    <button
-                      onClick={() => handleSort("locationCode")}
-                      className="flex items-center gap-2 hover:text-zinc-200"
-                    >
+                    <button onClick={() => handleSort("locationCode")} className="flex items-center gap-2 hover:text-zinc-200">
                       Location Code
                       <ArrowUpDown className="w-4 h-4" />
                     </button>
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
-                    <button
-                      onClick={() => handleSort("stockType")}
-                      className="flex items-center gap-2 hover:text-zinc-200"
-                    >
+                    <button onClick={() => handleSort("stockType")} className="flex items-center gap-2 hover:text-zinc-200">
                       Stock Type
                       <ArrowUpDown className="w-4 h-4" />
                     </button>
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
-                    <button
-                      onClick={() => handleSort("quantity")}
-                      className="flex items-center gap-2 hover:text-zinc-200"
-                    >
+                    <button onClick={() => handleSort("quantity")} className="flex items-center gap-2 hover:text-zinc-200">
                       Quantity
                       <ArrowUpDown className="w-4 h-4" />
                     </button>
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
-                    <button
-                      onClick={() => handleSort("necessary")}
-                      className="flex items-center gap-2 hover:text-zinc-200"
-                    >
+                    <button onClick={() => handleSort("necessary")} className="flex items-center gap-2 hover:text-zinc-200">
                       Necessary
                       <ArrowUpDown className="w-4 h-4" />
                     </button>
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
-                    <button
-                      onClick={() => handleSort("orderNumber")}
-                      className="flex items-center gap-2 hover:text-zinc-200"
-                    >
+                    <button onClick={() => handleSort("orderNumber")} className="flex items-center gap-2 hover:text-zinc-200">
                       Order
                       <ArrowUpDown className="w-4 h-4" />
                     </button>
@@ -708,6 +724,7 @@ export default function StockPage() {
         )}
       </motion.div>
 
+      {/* Modal pentru Create / Update */}
       <AnimatePresence>
         {(isCreateModalOpen || isUpdateModalOpen) && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
@@ -842,9 +859,7 @@ export default function StockPage() {
                   type="submit"
                   className="w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg hover:from-blue-600 hover:to-purple-600 transition-colors"
                 >
-                  {isCreateModalOpen
-                    ? "Create Transaction"
-                    : "Update Transaction"}
+                  {isCreateModalOpen ? "Create Transaction" : "Update Transaction"}
                 </motion.button>
               </form>
             </motion.div>
@@ -852,6 +867,7 @@ export default function StockPage() {
         )}
       </AnimatePresence>
 
+      {/* Modal pentru confirmarea ștergerii unei tranzacții */}
       <AnimatePresence>
         {isDeleteDialogOpen && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
@@ -864,8 +880,7 @@ export default function StockPage() {
             >
               <h2 className="text-xl font-semibold mb-4">Confirm Deletion</h2>
               <p className="text-zinc-400 mb-6">
-                Are you sure you want to delete the transaction with order
-                number{" "}
+                Are you sure you want to delete the transaction with order number{" "}
                 <span className="text-red-400 font-semibold">
                   {selectedStock?.orderNumber}
                 </span>
@@ -887,6 +902,44 @@ export default function StockPage() {
                   className="flex-1 px-4 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors"
                 >
                   Delete
+                </motion.button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal pentru confirmarea ștergerii tuturor tranzacțiilor */}
+      <AnimatePresence>
+        {isDeleteAllDialogOpen && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+            <motion.div
+              variants={modalVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 w-full max-w-md"
+            >
+              <h2 className="text-xl font-semibold mb-4">Confirm Delete All</h2>
+              <p className="text-zinc-400 mb-6">
+                Are you sure you want to delete all stock transactions? This action cannot be undone.
+              </p>
+              <div className="flex gap-4">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setIsDeleteAllDialogOpen(false)}
+                  className="flex-1 px-4 py-2 bg-zinc-800 rounded-lg hover:bg-zinc-700 transition-colors"
+                >
+                  Cancel
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleDeleteAll}
+                  className="flex-1 px-4 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors"
+                >
+                  Delete All
                 </motion.button>
               </div>
             </motion.div>

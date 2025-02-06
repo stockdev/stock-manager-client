@@ -136,6 +136,23 @@ class StockService extends ApiServer {
       return Promise.reject("Failed to process response.");
     }
   };
+
+  deleteAllStocks = async (token: string): Promise<string> => {
+    const response = await this.api<null, string>(
+      `/stock/deleteAllStocks`,
+      "DELETE",
+      null,
+      token
+    );
+
+    if (response.status === 200) {
+      return await response.text();
+    } else if (response.status === 403) {
+      return "Access denied. Only admins can perform this action.";
+    } else {
+      return Promise.reject("An error occurred while deleting all stocks.");
+    }
+  };
 }
 
 export default StockService;
