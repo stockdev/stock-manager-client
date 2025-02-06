@@ -187,6 +187,7 @@ export function StockTable({ searchTerm }: { searchTerm: string }) {
                   "Article Code",
                   "Location Code",
                   "Stock Type",
+                  "F-RP-P",
                   "Quantity",
                   "Necessary",
                   "Order Number",
@@ -240,6 +241,9 @@ export function StockTable({ searchTerm }: { searchTerm: string }) {
                   >
                     {stock.stockType}
                   </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-300">
+                  {stock.subStockType}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-300">
                   {stock.quantity}

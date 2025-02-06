@@ -4,6 +4,7 @@ import LoginResponse from "../dto/LoginResponse";
 import { CreateUserRequest } from "../dto/CreateUserRequest";
 import { UserResponse } from "../dto/UserResponse";
 import { UserResponseList } from "../dto/UserReponseList";
+import { UpdateUserRequest } from "../dto/UpdateUserRequest";
 class UserService extends ApiServer {
   login = async (user: LoginRequest): Promise<LoginResponse | string> => {
     const data = await this.api<LoginRequest, LoginResponse>(
@@ -68,6 +69,29 @@ class UserService extends ApiServer {
       return await response.text();
     }
   };
+
+  updateUser = async (
+    email: string,
+    updateUserRequest: UpdateUserRequest,
+    token: string
+  ): Promise<UserResponse | string> => {
+    const response = await this.api<UpdateUserRequest, UserResponse>(
+      `/user/update/${email}`,
+      "PUT",
+      updateUserRequest,
+      token
+    );
+    if (response.status === 200) {
+      return await response.json();
+    } else if (response.status === 403) {
+      return await response.json();
+    } else {
+      return await response.text();
+    }
+  };
+  
+
+
 }
 
 export default UserService;
