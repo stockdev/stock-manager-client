@@ -59,20 +59,34 @@ class LocationService extends ApiServer {
     }
   };
 
-  getAllLocations = async (): Promise<LocationResponseList | string> => {
+  getAllLocations = async (
+    page: number = 0,
+    size: number = 50,
+    searchTerm?: string
+  ): Promise<LocationResponseList | string> => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      size: size.toString(),
+    });
+  
+    if (searchTerm && searchTerm.trim().length > 0) {
+      params.append("searchTerm", searchTerm);
+    }
+  
+    const endpoint = `/location/getAllLocations?${params.toString()}`;
     const response = await this.api<null, LocationResponseList>(
-      `/location/getAllLocations`,
+      endpoint,
       "GET",
       null
     );
-
+  
     if (response.status === 200) {
       return await response.json();
     } else {
       return Promise.reject("An error occurred while fetching the locations.");
     }
   };
-
+  
   createLocation = async (
     location: CreateLocationRequest,
     token: string

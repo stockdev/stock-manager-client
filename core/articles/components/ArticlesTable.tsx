@@ -1,7 +1,7 @@
 "use client";
-import React, { useState, useEffect, useContext } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, ArrowUpDown } from "lucide-react";
+import { ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
 import ArticleService from "@/core/articles/service/ArticleService";
 import Article from "@/core/articles/model/Article";
@@ -21,26 +21,35 @@ export function ArticlesTable({ searchTerm }: ArticlesTableProps) {
   const articleService = new ArticleService();
 
   const [articles, setArticles] = useState<Article[]>([]);
-  const [sortConfig, setSortConfig] = useState<{
-    key: keyof Article | null;
-    direction: "asc" | "desc";
-  }>({
-    key: null,
-    direction: "asc",
-  });
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
-  const pageSizeOptions = [50, 100, 150, 250, 500];
 
-  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [totalItems, setTotalItems] = useState<number>(0);
+  const pageSizeOptions = [10, 25, 50, 100, 500];
+
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState<boolean>(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false);
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
 
+  // Funcția de fetch a articolelor; trimite parametrii necesari către API
   const fetchArticles = async () => {
     try {
-      const response = await articleService.getAllArticles();
+      console.log("Fetching articles with:", {
+        currentPage,
+        pageSize,
+        searchTerm,
+      });
+      const response = await articleService.getAllArticles(
+        currentPage - 1,
+        pageSize,
+        searchTerm
+      );
+      console.log("Response:", response);
       if (typeof response !== "string") {
         setArticles(response.list || []);
+        setTotalPages(response.totalPages);
+        setTotalItems(response.totalElements);
       } else {
         toast.custom((t) => (
           <ToastMessage
@@ -51,12 +60,12 @@ export function ArticlesTable({ searchTerm }: ArticlesTableProps) {
           />
         ));
       }
-    } catch (error) {
+    } catch (error: any) {
       toast.custom((t) => (
         <ToastMessage
           type="error"
           title="Error"
-          message="Failed to fetch articles"
+          message={(error as Error).message || "Failed to fetch articles"}
           onClose={() => toast.dismiss(t)}
         />
       ));
@@ -64,42 +73,13 @@ export function ArticlesTable({ searchTerm }: ArticlesTableProps) {
   };
 
   useEffect(() => {
-    fetchArticles();
-    const handleArticlesUpdated = () => fetchArticles();
-    window.addEventListener("articlesUpdated", handleArticlesUpdated);
-    return () =>
-      window.removeEventListener("articlesUpdated", handleArticlesUpdated);
-  }, []);
-
-  const filteredArticles = articles.filter(
-    (article) =>
-      article.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      article.code.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-  const sortedArticles = [...filteredArticles].sort((a, b) => {
-    if (!sortConfig.key) return 0;
-    const aValue = a[sortConfig.key];
-    const bValue = b[sortConfig.key];
-    if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
-    if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
-    return 0;
-  });
-
-  const totalPages = Math.ceil(sortedArticles.length / pageSize);
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  const currentArticles = sortedArticles.slice(startIndex, endIndex);
-
-  const handleSort = (key: keyof Article) => {
-    setSortConfig({
-      key,
-      direction:
-        sortConfig.key === key && sortConfig.direction === "asc"
-          ? "desc"
-          : "asc",
-    });
     setCurrentPage(1);
-  };
+    fetchArticles();
+  }, [searchTerm, pageSize]);
+
+  useEffect(() => {
+    fetchArticles();
+  }, [currentPage]);
 
   const handleConfirmDelete = async () => {
     if (!selectedArticle || !user?.jwtToken) return;
@@ -132,6 +112,13 @@ export function ArticlesTable({ searchTerm }: ArticlesTableProps) {
     }
   };
 
+  useEffect(() => {
+    const handleArticlesUpdated = () => fetchArticles();
+    window.addEventListener("articlesUpdated", handleArticlesUpdated);
+    return () =>
+      window.removeEventListener("articlesUpdated", handleArticlesUpdated);
+  }, []);
+
   return (
     <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden">
       <div className="overflow-x-auto">
@@ -143,13 +130,9 @@ export function ArticlesTable({ searchTerm }: ArticlesTableProps) {
                   key={key}
                   className="px-6 py-4 text-left text-xs font-medium text-zinc-400 uppercase"
                 >
-                  <button
-                    onClick={() => handleSort(key)}
-                    className="flex items-center gap-2 hover:text-zinc-200"
-                  >
+                  <span className="flex items-center gap-2 hover:text-zinc-200">
                     {key.toUpperCase()}
-                    <ArrowUpDown className="w-4 h-4" />
-                  </button>
+                  </span>
                 </th>
               ))}
               <th className="px-6 py-4 text-left text-xs font-medium text-zinc-400 uppercase">
@@ -158,7 +141,7 @@ export function ArticlesTable({ searchTerm }: ArticlesTableProps) {
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-800">
-            {currentArticles.map((article) => (
+            {articles.map((article) => (
               <tr key={article.id} className="group">
                 <td className="px-6 py-4 whitespace-nowrap">{article.id}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{article.code}</td>
@@ -194,15 +177,18 @@ export function ArticlesTable({ searchTerm }: ArticlesTableProps) {
         currentPage={currentPage}
         totalPages={totalPages}
         pageSize={pageSize}
-        totalItems={sortedArticles.length}
+        totalItems={totalItems}
         pageSizeOptions={pageSizeOptions}
-        onPageChange={(page) => setCurrentPage(page)}
+        onPageChange={(page) => {
+          setCurrentPage(page);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }}
         onPageSizeChange={(size) => {
           setPageSize(size);
           setCurrentPage(1);
+          window.scrollTo({ top: 0, behavior: "smooth" });
         }}
       />
-
       <AnimatePresence>
         {isUpdateModalOpen && selectedArticle && (
           <UpdateArticleModal

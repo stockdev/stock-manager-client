@@ -6,7 +6,6 @@ import { UpdateArticleRequest } from "../dto/UpdateArticleRequest";
 import { ImportResponse } from "../dto/ImportResponse";
 
 class ArticleService extends ApiServer {
-
   importArticlesFromExcel = async (
     file: File,
     token: string
@@ -42,24 +41,6 @@ class ArticleService extends ApiServer {
     }
   };
 
-  getArticleById = async (
-    articleId: number
-  ): Promise<ArticleResponse | string> => {
-    const response = await this.api<null, ArticleResponse>(
-      `/article/getArticleById/${articleId}`,
-      "GET",
-      null
-    );
-
-    if (response.status === 200) {
-      return await response.json();
-    } else if (response.status === 404) {
-      return "Article not found";
-    } else {
-      return Promise.reject("An error occurred while fetching the article.");
-    }
-  };
-
   getArticleByCode = async (
     code: string
   ): Promise<ArticleResponse | string> => {
@@ -78,9 +59,23 @@ class ArticleService extends ApiServer {
     }
   };
 
-  getAllArticles = async (): Promise<ArticleResponseList | string> => {
+  getAllArticles = async (
+    page: number = 0,
+    size: number = 50,
+    searchTerm?: string
+  ): Promise<ArticleResponseList | string> => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      size: size.toString(),
+    });
+
+    if (searchTerm && searchTerm.trim().length > 0) {
+      params.append("searchTerm", searchTerm);
+    }
+
+    const endpoint = `/article/getAllArticles?${params.toString()}`;
     const response = await this.api<null, ArticleResponseList>(
-      `/article/getAllArticles`,
+      endpoint,
       "GET",
       null
     );

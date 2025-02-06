@@ -2,12 +2,12 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
-  ArrowUpDown,
   Bell,
   Info,
   AlertTriangle,
   AlertOctagon,
   User,
+  Text,
 } from "lucide-react";
 import { toast } from "sonner";
 import NotificationService from "@/core/notification/service/NotificationService";
@@ -16,25 +16,35 @@ import { NotificationType } from "@/core/notification/dto/NotificationType";
 import { Pagination } from "@/shared/Pagination";
 import NotificationResponse from "../dto/NotificationResponse";
 import NotificationResponseList from "../dto/NotificationResponseList";
+import { UserRole } from "@/core/user/dto/UserRole";
 
 interface NotificationTableProps {
   searchTerm: string;
   selectedType: string;
 }
 
-
-
+const getRoleColor = (role: UserRole): string => {
+  switch (role) {
+    case UserRole.ADMIN:
+      return "bg-gradient-to-r from-blue-500/20 to-blue-600/20 text-blue-400";
+    case UserRole.MANAGER:
+      return "bg-gradient-to-r from-purple-500/20 to-purple-600/20 text-purple-400";
+    case UserRole.UTILIZATOR:
+      return "bg-gradient-to-r from-emerald-500/20 to-emerald-600/20 text-emerald-400";
+    default:
+      return "";
+  }
+};
 export const NotificationTable: React.FC<NotificationTableProps> = ({
   searchTerm,
   selectedType,
 }) => {
-  const [notifications, setNotifications] = useState<NotificationResponse[]>([]);
-  const [sortConfig, setSortConfig] = useState<{ key: string | null; direction: "asc" | "desc" }>({ 
-    key: "createdAt",
-    direction: "desc" 
-  });
+  const [notifications, setNotifications] = useState<NotificationResponse[]>(
+    []
+  );
+ 
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10); 
+  const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
@@ -69,15 +79,7 @@ export const NotificationTable: React.FC<NotificationTableProps> = ({
 
   useEffect(() => {
     fetchNotifications();
-  }, [currentPage, pageSize, sortConfig.key, sortConfig.direction]);
-
-  const handleSort = (key: string) => {
-    setSortConfig((prev) => ({
-      key,
-      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
-    }));
-    setCurrentPage(1);
-  };
+  }, [currentPage, pageSize]);
 
   const getNotificationStyles = (type: NotificationType) => {
     switch (type) {
@@ -107,7 +109,7 @@ export const NotificationTable: React.FC<NotificationTableProps> = ({
   return (
     <div className="mt-6">
       <LoadingOverlay isVisible={false} />
-      
+
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -119,37 +121,30 @@ export const NotificationTable: React.FC<NotificationTableProps> = ({
             <thead>
               <tr className="border-b border-zinc-800">
                 <th className="px-6 py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
-                  <button 
-                    onClick={() => handleSort("notificationType")} 
-                    className="flex items-center gap-2 hover:text-zinc-200"
-                  >
+                  <span className="flex items-center gap-2 hover:text-zinc-200">
+                    <Info className="w-4 h-4" />
                     Type
-                    <ArrowUpDown className="w-4 h-4" />
-                  </button>
+                  </span>
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
-                  <button 
-                    onClick={() => handleSort("message")} 
-                    className="flex items-center gap-2 hover:text-zinc-200"
-                  >
+                  <span className="flex items-center gap-2 hover:text-zinc-200">
+                    <Text className="w-4 h-4" />
                     Message
-                    <ArrowUpDown className="w-4 h-4" />
-                  </button>
+                  </span>
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
-                  <button 
-                    onClick={() => handleSort("user.fullName")} 
-                    className="flex items-center gap-2 hover:text-zinc-200"
-                  >
+                  <span className="flex items-center gap-2 hover:text-zinc-200">
+                    <User className="w-4 h-4" />
                     User
-                    <ArrowUpDown className="w-4 h-4" />
-                  </button>
+                  </span>
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800">
               {notifications.map((notification, index) => {
-                const { icon, colors } = getNotificationStyles(notification.notificationType);
+                const { icon, colors } = getNotificationStyles(
+                  notification.notificationType
+                );
                 return (
                   <motion.tr
                     key={index}
@@ -159,19 +154,31 @@ export const NotificationTable: React.FC<NotificationTableProps> = ({
                     className="group hover:bg-white/[0.02] transition-colors"
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${colors}`}>
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${colors}`}
+                      >
                         {icon} {notification.notificationType}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-zinc-300">{notification.message}</td>
+                    <td className="px-6 py-4 text-sm text-zinc-300">
+                      {notification.message}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center">
-                          <User className="w-4 h-4 text-zinc-400" />
-                        </div>
+                      <div className="flex flex-col  gap-2">
                         <div className="text-sm">
-                          <div className="font-medium text-zinc-300">{notification.user?.fullName}</div>
-                          <div className="text-zinc-500">{notification.user?.email}</div>
+                          <div className="font-medium text-zinc-300">
+                            {notification.user?.fullName}
+                          </div>
+                          <div className="text-zinc-500">
+                            {notification.user?.email}
+                          </div>
+                        </div>
+                        <div
+                          className={`text-xs rounded-full px-1 py-1 flex w-[25%] items-center justify-center    ${getRoleColor(
+                            notification.user.userRole
+                          )}`}
+                        >
+                          {notification.user.userRole}
                         </div>
                       </div>
                     </td>
@@ -187,7 +194,7 @@ export const NotificationTable: React.FC<NotificationTableProps> = ({
             currentPage={currentPage}
             totalPages={totalPages}
             pageSize={pageSize}
-            pageSizeOptions={[10, 25, 50, 100]}
+            pageSizeOptions={[10, 25, 50, 100, 500]}
             totalItems={totalItems}
             onPageChange={(page) => {
               setCurrentPage(page);

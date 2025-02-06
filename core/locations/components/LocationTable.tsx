@@ -1,7 +1,7 @@
 "use client";
-import React, { useState, useEffect, useContext } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, ArrowUpDown } from "lucide-react";
+import { ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
 import LocationService from "@/core/locations/service/LocationService";
 import Location from "@/core/locations/model/Location";
@@ -21,28 +21,30 @@ export function LocationsTable({ searchTerm }: LocationsTableProps) {
   const locationService = new LocationService();
 
   const [locations, setLocations] = useState<Location[]>([]);
-  const [sortConfig, setSortConfig] = useState<{
-    key: keyof Location | null;
-    direction: "asc" | "desc";
-  }>({
-    key: null,
-    direction: "asc",
-  });
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
-  const pageSizeOptions = [50, 100, 150, 250, 500];
 
-  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [totalItems, setTotalItems] = useState<number>(0);
+  const pageSizeOptions = [10, 25, 50, 100, 500];
+
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState<boolean>(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false);
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(
     null
   );
 
   const fetchLocations = async () => {
     try {
-      const response = await locationService.getAllLocations();
+      const response = await locationService.getAllLocations(
+        currentPage - 1,
+        pageSize,
+        searchTerm
+      );
       if (typeof response !== "string") {
         setLocations(response.list || []);
+        setTotalPages(response.totalPages);
+        setTotalItems(response.totalElements);
       } else {
         toast.custom((t) => (
           <ToastMessage
@@ -53,12 +55,12 @@ export function LocationsTable({ searchTerm }: LocationsTableProps) {
           />
         ));
       }
-    } catch (error) {
+    } catch (error: any) {
       toast.custom((t) => (
         <ToastMessage
           type="error"
           title="Error"
-          message="Failed to fetch locations"
+          message={(error as Error).message || "Failed to fetch locations"}
           onClose={() => toast.dismiss(t)}
         />
       ));
@@ -66,40 +68,13 @@ export function LocationsTable({ searchTerm }: LocationsTableProps) {
   };
 
   useEffect(() => {
-    fetchLocations();
-    const handleLocationsUpdated = () => fetchLocations();
-    window.addEventListener("locationsUpdated", handleLocationsUpdated);
-    return () =>
-      window.removeEventListener("locationsUpdated", handleLocationsUpdated);
-  }, []);
-
-  const filteredLocations = locations.filter((loc) =>
-    loc.code.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-  const sortedLocations = [...filteredLocations].sort((a, b) => {
-    if (!sortConfig.key) return 0;
-    const aValue = a[sortConfig.key];
-    const bValue = b[sortConfig.key];
-    if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
-    if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
-    return 0;
-  });
-
-  const totalPages = Math.ceil(sortedLocations.length / pageSize);
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  const currentLocations = sortedLocations.slice(startIndex, endIndex);
-
-  const handleSort = (key: keyof Location) => {
-    setSortConfig({
-      key,
-      direction:
-        sortConfig.key === key && sortConfig.direction === "asc"
-          ? "desc"
-          : "asc",
-    });
     setCurrentPage(1);
-  };
+    fetchLocations();
+  }, [searchTerm, pageSize]);
+
+  useEffect(() => {
+    fetchLocations();
+  }, [currentPage]);
 
   const handleConfirmDelete = async () => {
     if (!selectedLocation || !user?.jwtToken) return;
@@ -132,30 +107,28 @@ export function LocationsTable({ searchTerm }: LocationsTableProps) {
     }
   };
 
+  useEffect(() => {
+    const handleLocationsUpdated = () => fetchLocations();
+    window.addEventListener("locationsUpdated", handleLocationsUpdated);
+    return () =>
+      window.removeEventListener("locationsUpdated", handleLocationsUpdated);
+  }, []);
+
   return (
     <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden">
-      <div className="p-4"></div>
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
             <tr className="border-b border-zinc-800">
               <th className="px-6 py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
-                <button
-                  onClick={() => handleSort("id")}
-                  className="flex items-center gap-2 hover:text-zinc-200"
-                >
-                  ID
-                  <ArrowUpDown className="w-4 h-4" />
-                </button>
+                <span className="flex items-center gap-2 hover:text-zinc-200">
+                  Id
+                </span>
               </th>
               <th className="px-6 py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
-                <button
-                  onClick={() => handleSort("code")}
-                  className="flex items-center gap-2 hover:text-zinc-200"
-                >
-                  CODE
-                  <ArrowUpDown className="w-4 h-4" />
-                </button>
+                <span className="flex items-center gap-2 hover:text-zinc-200">
+                  Code
+                </span>
               </th>
               {user?.userRole === "ADMIN" && (
                 <th className="px-6 py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
@@ -165,7 +138,7 @@ export function LocationsTable({ searchTerm }: LocationsTableProps) {
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-800">
-            {currentLocations.map((loc) => (
+            {locations.map((loc) => (
               <tr key={loc.id} className="group">
                 <td className="px-6 py-4 whitespace-nowrap">{loc.id}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{loc.code}</td>
@@ -202,15 +175,18 @@ export function LocationsTable({ searchTerm }: LocationsTableProps) {
         currentPage={currentPage}
         totalPages={totalPages}
         pageSize={pageSize}
-        totalItems={sortedLocations.length}
+        totalItems={totalItems}
         pageSizeOptions={pageSizeOptions}
-        onPageChange={(page) => setCurrentPage(page)}
+        onPageChange={(page) => {
+          setCurrentPage(page);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }}
         onPageSizeChange={(size) => {
           setPageSize(size);
           setCurrentPage(1);
+          window.scrollTo({ top: 0, behavior: "smooth" });
         }}
       />
-
       <AnimatePresence>
         {isUpdateModalOpen && selectedLocation && (
           <UpdateLocationModal
