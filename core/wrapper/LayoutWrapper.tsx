@@ -2,7 +2,7 @@
 
 import React from "react";
 import { usePathname } from "next/navigation";
-import Sidebar from "@/components/Sidebar";
+import Sidebar from "@/shared/Sidebar";
 import { Toaster } from "sonner";
 
 const LayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {

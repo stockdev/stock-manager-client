@@ -23,7 +23,7 @@ import LoginContextType from "@/core/context/LoginContextType";
 import { CreateUserRequest } from "@/core/user/dto/CreateUserRequest";
 import { toast } from "sonner";
 import { ToastMessage } from "@/core/toast/ToastMessage";
-import LoadingOverlay from "@/components/LoadingOverlay";
+import LoadingOverlay from "@/shared/LoadingOverlay";
 
 const ITEMS_PER_PAGE = 8;
 

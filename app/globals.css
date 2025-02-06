@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -47,13 +47,11 @@
     --radius: 0.5rem;
   }
 
-  
   body {
     @apply bg-background text-foreground;
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: "Space Grotesk", sans-serif;
   }
 
-  /* Custom Scrollbar */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -64,11 +62,11 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: rgba(74, 222, 128, 0.2);
+    background: rgba(142, 72, 235, 0.4);
     border-radius: 3px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(74, 222, 128, 0.4);
+    background: rgba(142, 72, 235, 0.4);
   }
 }
