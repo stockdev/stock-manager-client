@@ -6,12 +6,7 @@ import { UpdateArticleRequest } from "../dto/UpdateArticleRequest";
 import { ImportResponse } from "../dto/ImportResponse";
 
 class ArticleService extends ApiServer {
-  /**
-   * Import articles from an Excel file (Multipart/form-data).
-   * @param file  The Excel file to upload
-   * @param token The JWT token with Admin privileges
-   * @returns     An ImportResponse object or an error message string
-   */
+
   importArticlesFromExcel = async (
     file: File,
     token: string
