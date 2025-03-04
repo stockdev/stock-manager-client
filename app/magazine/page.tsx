@@ -3,50 +3,36 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { PageHeader } from "@/shared/PageHeader";
 import { Search, X, Printer } from "lucide-react";
-import { MagazieTotalResponse } from "@/core/articles/components/MagazieTotalResponse";
+import { MagazieTotalResponse } from "@/core/articles/dto/MagazieTotalResponse";
+import ArticleService from "@/core/articles/service/ArticleService";
 
-interface LocationStock {
-  locationCode: string;
-  stock: number;
-  consumption: number; 
-  utilaj: string;
-  obs: string;
-}
-
-interface ArticleDataWithLocations extends MagazieTotalResponse {
-  locations: LocationStock[];
-}
 
 const MagazinePage = () => {
-  const mockArticleData: ArticleDataWithLocations = {
-    articleName: "Steel Pipe 50mm",
-    articleCode: "SP-50-001",
-    stockIn: 1250,
-    stockOut: 850,
-    finalStock: 400,
-    stockProduction: 200,
-    locations: [
-      { locationCode: "B5-3", stock: 150, consumption: 10, utilaj: "BOXMAT", obs: "" },
-      { locationCode: "A7-2", stock: 120, consumption: 15, utilaj: "BOXMAT", obs: "" },
-      { locationCode: "B16-1", stock: 80, consumption: 5, utilaj: "BOXMAT", obs: "Check quality" },
-    ],
-  };
-
   const [articleCode, setArticleCode] = useState("");
-  const [articleData, setArticleData] = useState<ArticleDataWithLocations | null>(null);
+  const [articleData, setArticleData] = useState<MagazieTotalResponse | null>(null);
   const [loading, setLoading] = useState(false);
-
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+  const magazieService = new ArticleService();
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     if (!articleCode.trim()) return;
     setLoading(true);
 
-    // Simulate an API call
-    setTimeout(() => {
-      setArticleData(mockArticleData); 
+    try {
+      const response = await magazieService.getMagazieTotalForArticle(articleCode);
+      if (typeof response === "string") {
+     
+        console.warn(response);
+        setArticleData(null);
+      } else {
+        setArticleData(response);
+      }
+    } catch (err) {
+      console.error(err);
+      setArticleData(null);
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   const clearFilter = () => {
@@ -106,9 +92,9 @@ const MagazinePage = () => {
                       <td>${loc.locationCode}</td>
                       <td>${loc.stock}</td>
                       <td>${articleData.finalStock}</td>
-                      <td>${loc.consumption}</td>
-                      <td>${loc.utilaj}</td>
-                      <td>${loc.obs}</td>
+                      <td>${"consumption" in loc ? loc.consumption : ""}</td>
+                      <td>${"utilaj" in loc ? loc.utilaj : ""}</td>
+                      <td>${"obs" in loc ? loc.obs : ""}</td>
                     </tr>
                   `
                 )
@@ -278,9 +264,9 @@ const MagazinePage = () => {
                     <td className="px-3 py-2">{loc.locationCode}</td>
                     <td className="px-3 py-2">{loc.stock}</td>
                     <td className="px-3 py-2">{articleData.finalStock}</td>
-                    <td className="px-3 py-2">{loc.consumption}</td>
-                    <td className="px-3 py-2">{loc.utilaj}</td>
-                    <td className="px-3 py-2">{loc.obs}</td>
+                    <td className="px-3 py-2"></td>
+                    <td className="px-3 py-2"></td>
+                    <td className="px-3 py-2"></td>
                   </tr>
                 ))}
               </tbody>

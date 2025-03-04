@@ -1,3 +1,5 @@
+import { MagaziePrintResponse } from "./MagaziePrintResponse";
+
 export interface MagazieTotalResponse {
   articleName: string;
   articleCode: string;
@@ -5,4 +7,5 @@ export interface MagazieTotalResponse {
   stockOut: number;
   finalStock: number;
   stockProduction: number;
+  locations: MagaziePrintResponse[];
 }
