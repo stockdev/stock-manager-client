@@ -5,22 +5,19 @@ import { PageHeader } from "@/shared/PageHeader";
 import { Search, X, Printer } from "lucide-react";
 import { MagazieTotalResponse } from "@/core/articles/components/MagazieTotalResponse";
 
-// Example interface for location stock data
 interface LocationStock {
   locationCode: string;
   stock: number;
-  consumption: number; // or string if you need "550 kg" etc.
+  consumption: number; 
   utilaj: string;
   obs: string;
 }
 
-// Combine total response with array of locations (mock example)
 interface ArticleDataWithLocations extends MagazieTotalResponse {
   locations: LocationStock[];
 }
 
 const MagazinePage = () => {
-  // Mock Data
   const mockArticleData: ArticleDataWithLocations = {
     articleName: "Steel Pipe 50mm",
     articleCode: "SP-50-001",
@@ -28,7 +25,6 @@ const MagazinePage = () => {
     stockOut: 850,
     finalStock: 400,
     stockProduction: 200,
-    // Mock Location Data
     locations: [
       { locationCode: "B5-3", stock: 150, consumption: 10, utilaj: "BOXMAT", obs: "" },
       { locationCode: "A7-2", stock: 120, consumption: 15, utilaj: "BOXMAT", obs: "" },
@@ -36,22 +32,19 @@ const MagazinePage = () => {
     ],
   };
 
-  // State
   const [articleCode, setArticleCode] = useState("");
   const [articleData, setArticleData] = useState<ArticleDataWithLocations | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // For row selection in the locations table
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
 
-  // Handlers
   const handleSearch = () => {
     if (!articleCode.trim()) return;
     setLoading(true);
 
     // Simulate an API call
     setTimeout(() => {
-      setArticleData(mockArticleData); // In reality, you'd fetch from server
+      setArticleData(mockArticleData); 
       setLoading(false);
     }, 1000);
   };
@@ -59,30 +52,26 @@ const MagazinePage = () => {
   const clearFilter = () => {
     setArticleCode("");
     setArticleData(null);
-    setSelectedRows(new Set()); // clear selections
+    setSelectedRows(new Set());
   };
 
   const handlePrint = () => {
     if (!articleData) return;
 
-    // If you want to open a new window and print only selected rows:
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
       alert("Pop-up blocked. Please allow pop-ups for printing.");
       return;
     }
 
-    // Filter down to the selected locations
     const selectedLocationData = articleData.locations.filter((loc) =>
       selectedRows.has(loc.locationCode)
     );
 
-    // If nothing is selected, default to printing *all* rows
     const rowsToPrint = selectedLocationData.length > 0
       ? selectedLocationData
       : articleData.locations;
 
-    // Generate minimal HTML
     printWindow.document.write(`
       <html>
         <head>
@@ -136,7 +125,6 @@ const MagazinePage = () => {
     printWindow.print();
   };
 
-  // Toggle selection for each row in the table
   const toggleRowSelection = (locationCode: string) => {
     const newSelectedRows = new Set(selectedRows);
     if (newSelectedRows.has(locationCode)) {
@@ -149,13 +137,11 @@ const MagazinePage = () => {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white p-8">
-      {/* Page Header */}
       <PageHeader 
         title="Magazine Management" 
         subtitle="Manage your magazine items" 
       />
 
-      {/* Search Section */}
       <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 mb-6">
         <div className="flex flex-col md:flex-row gap-4 items-end">
           <div className="flex-1">
@@ -221,10 +207,8 @@ const MagazinePage = () => {
         </div>
       </div>
 
-      {/* Cards + Table */}
       {articleData && (
         <>
-          {/* Card-like summary of main stock info */}
           <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
             <div className="flex flex-wrap gap-4">
               <div className="flex flex-col min-w-[140px] bg-zinc-800/50 p-3 rounded-lg">
@@ -267,7 +251,6 @@ const MagazinePage = () => {
             </div>
           </div>
 
-          {/* Table of locations */}
           <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 mt-6 overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
