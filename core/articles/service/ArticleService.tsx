@@ -4,6 +4,8 @@ import { ArticleResponseList } from "../dto/ArticleResponseList";
 import { CreateArticleRequest } from "../dto/CreateArticleRequest";
 import { UpdateArticleRequest } from "../dto/UpdateArticleRequest";
 import { ImportResponse } from "../dto/ImportResponse";
+import { MagazieTotalResponse } from "../components/MagazieTotalResponse";
+import { MagazieResponseList } from "../components/MagazieResponseList";
 
 class ArticleService extends ApiServer {
   importArticlesFromExcel = async (
@@ -206,6 +208,49 @@ class ArticleService extends ApiServer {
       return Promise.reject("An error occurred while deleting all articles.");
     }
   };
+
+
+  async getMagazieResponseForArticle(
+    articleCode: string
+  ): Promise<MagazieResponseList | string> {
+    const endpoint = `/article/printMagazieResponseForArticle/${articleCode}`;
+    const response = await this.api<null, MagazieResponseList>(
+      endpoint,
+      "GET",
+      null
+    );
+
+    if (response.status === 200) {
+      return await response.json();
+    } else if (response.status === 404) {
+      return "No magazine data found for this article.";
+    } else {
+      return Promise.reject(
+        "An error occurred while fetching magazie data for article."
+      );
+    }
+  }
+
+  async getMagazieTotalForArticle(
+    articleCode: string
+  ): Promise<MagazieTotalResponse | string> {
+    const endpoint = `/article/getMagazieTotalForArticle/${articleCode}`;
+    const response = await this.api<null, MagazieTotalResponse>(
+      endpoint,
+      "GET",
+      null
+    );
+
+    if (response.status === 200) {
+      return await response.json();
+    } else if (response.status === 404) {
+      return "No total data found for this article.";
+    } else {
+      return Promise.reject(
+        "An error occurred while fetching magazie total for article."
+      );
+    }
+  }
 }
 
 export default ArticleService;

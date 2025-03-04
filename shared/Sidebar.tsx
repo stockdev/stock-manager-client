@@ -22,11 +22,12 @@ const menuItems = [
   { name: "Article", icon: FileText, link: "/article" },
   { name: "Locations", icon: MapPin, link: "/locations" },
   { name: "Transactions", icon: WalletCards, link: "/transactions" },
+  { name: "Magazine", icon: FileText, link: "/magazine" },
+  { name: "Equipment", icon: Wrench, link: "/equipment" },
   { name: "Team", icon: Users, link: "/team" },
   { name: "Notifications", icon: Bell, link: "/notifications" },
-  { name: "Equipment", icon: Wrench, link: "/equipment" }
 
-  // { name: "Settings", icon: Settings, link: "/settings" },
+  
 ];
 
 const Sidebar = () => {

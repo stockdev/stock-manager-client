@@ -17,7 +17,10 @@ interface StockActionBarProps {
   setSearchTerm: (term: string) => void;
 }
 
-export function StockActionBar({ searchTerm, setSearchTerm }: StockActionBarProps) {
+export function StockActionBar({
+  searchTerm,
+  setSearchTerm,
+}: StockActionBarProps) {
   const { user } = useContext(LoginContext) as LoginContextType;
   const stockService = new StockService();
   const isAdmin = user?.userRole === "ADMIN";
@@ -29,25 +32,24 @@ export function StockActionBar({ searchTerm, setSearchTerm }: StockActionBarProp
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-
   // Handlere pentru drag & drop
-    const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-      e.preventDefault();
-      setIsDragging(true);
-    };
-  
-    const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-      e.preventDefault();
-      setIsDragging(false);
-    };
-  
-    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-      e.preventDefault();
-      setIsDragging(false);
-      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-        setSelectedFile(e.dataTransfer.files[0]);
-      }
-    };
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      setSelectedFile(e.dataTransfer.files[0]);
+    }
+  };
   // Handlere pentru import
   const handleFileSelect = (file: File | null) => setSelectedFile(file);
   const handleCancelImport = () => {
@@ -57,10 +59,18 @@ export function StockActionBar({ searchTerm, setSearchTerm }: StockActionBarProp
   const handleImport = async () => {
     if (!selectedFile || !user?.jwtToken) return;
     try {
-      const response = await stockService.importStocksFromExcel(selectedFile, user.jwtToken);
+      const response = await stockService.importStocksFromExcel(
+        selectedFile,
+        user.jwtToken
+      );
       if (typeof response === "string") {
         toast.custom((t) => (
-          <ToastMessage type="error" title="Import Error" message={response} onClose={() => toast.dismiss(t)} />
+          <ToastMessage
+            type="error"
+            title="Import Error"
+            message={response}
+            onClose={() => toast.dismiss(t)}
+          />
         ));
       } else {
         toast.custom((t) => (
@@ -75,7 +85,12 @@ export function StockActionBar({ searchTerm, setSearchTerm }: StockActionBarProp
       }
     } catch (error) {
       toast.custom((t) => (
-        <ToastMessage type="error" title="Error" message="Failed to import file" onClose={() => toast.dismiss(t)} />
+        <ToastMessage
+          type="error"
+          title="Error"
+          message="Failed to import file"
+          onClose={() => toast.dismiss(t)}
+        />
       ));
     } finally {
       setIsImportModalOpen(false);
@@ -90,17 +105,32 @@ export function StockActionBar({ searchTerm, setSearchTerm }: StockActionBarProp
       const response = await stockService.deleteAllStocks(user.jwtToken);
       if (typeof response !== "string" || response === "") {
         toast.custom((t) => (
-          <ToastMessage type="success" title="Success" message="All stock transactions deleted successfully" onClose={() => toast.dismiss(t)} />
+          <ToastMessage
+            type="success"
+            title="Success"
+            message="All stock transactions deleted successfully"
+            onClose={() => toast.dismiss(t)}
+          />
         ));
         window.dispatchEvent(new Event("stocksUpdated"));
       } else {
         toast.custom((t) => (
-          <ToastMessage type="error" title="Error" message={response} onClose={() => toast.dismiss(t)} />
+          <ToastMessage
+            type="error"
+            title="Error"
+            message={response}
+            onClose={() => toast.dismiss(t)}
+          />
         ));
       }
     } catch (error) {
       toast.custom((t) => (
-        <ToastMessage type="error" title="Error" message="Failed to delete all stock transactions" onClose={() => toast.dismiss(t)} />
+        <ToastMessage
+          type="error"
+          title="Error"
+          message="Failed to delete all stock transactions"
+          onClose={() => toast.dismiss(t)}
+        />
       ));
     } finally {
       setIsDeleteAllDialogOpen(false);
@@ -130,7 +160,11 @@ export function StockActionBar({ searchTerm, setSearchTerm }: StockActionBarProp
             <Plus className="w-4 h-4" />
             New Transaction
           </motion.button>
-          <label className="px-4 py-2 bg-emerald-500/20 text-emerald-400 rounded-lg hover:bg-emerald-500/30 transition-colors flex items-center gap-2 text-sm font-medium cursor-pointer">
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="px-4 py-2 bg-green-500/20 text-green-400 rounded-lg flex items-center gap-2 text-sm font-medium"
+          >
             <FileUp className="w-4 h-4" />
             Import Excel
             <input
@@ -145,7 +179,7 @@ export function StockActionBar({ searchTerm, setSearchTerm }: StockActionBarProp
               }}
               className="hidden"
             />
-          </label>
+          </motion.button>
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -160,9 +194,7 @@ export function StockActionBar({ searchTerm, setSearchTerm }: StockActionBarProp
 
       <AnimatePresence>
         {isCreateModalOpen && (
-          < CreateStockModal
-            onClose={() => setIsCreateModalOpen(false)}
-          />
+          <CreateStockModal onClose={() => setIsCreateModalOpen(false)} />
         )}
       </AnimatePresence>
       <AnimatePresence>
