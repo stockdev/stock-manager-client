@@ -2,7 +2,7 @@
 import React, { useContext, useState } from "react";
 import {
   LayoutDashboard,
-  
+  Wrench,
   LogOut,
   BoxesIcon,
   FileText,
@@ -24,6 +24,8 @@ const menuItems = [
   { name: "Transactions", icon: WalletCards, link: "/transactions" },
   { name: "Team", icon: Users, link: "/team" },
   { name: "Notifications", icon: Bell, link: "/notifications" },
+  { name: "Equipment", icon: Wrench, link: "/equipment" }
+
   // { name: "Settings", icon: Settings, link: "/settings" },
 ];
 

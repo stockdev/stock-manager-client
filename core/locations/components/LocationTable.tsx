@@ -125,11 +125,6 @@ export function LocationsTable({ searchTerm }: LocationsTableProps) {
             <tr className="border-b border-zinc-800">
               <th className="px-6 py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
                 <span className="flex items-center gap-2 hover:text-zinc-200">
-                  Id
-                </span>
-              </th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
-                <span className="flex items-center gap-2 hover:text-zinc-200">
                   Code
                 </span>
               </th>
@@ -141,9 +136,8 @@ export function LocationsTable({ searchTerm }: LocationsTableProps) {
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-800">
-            {locations.map((loc) => (
-              <tr key={loc.id} className="group">
-                <td className="px-6 py-4 whitespace-nowrap">{loc.id}</td>
+            {locations.map((loc,index) => (
+              <tr key={index} className="group">
                 <td className="px-6 py-4 whitespace-nowrap">{loc.code}</td>
                 {user?.userRole === "ADMIN" && (
                   <td className="px-6 py-4 whitespace-nowrap">
