@@ -1,8 +1,6 @@
 import { Metadata } from 'next';
 import './globals.css';
-import Sidebar from '@/shared/Sidebar';
 import LoginProvider from '@/core/context/LoginProvider';
-import { Layout } from 'lucide-react';
 import LayoutWrapper from '@/core/wrapper/LayoutWrapper';
 
 export const metadata: Metadata = {

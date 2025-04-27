@@ -5,7 +5,6 @@ import {
   BarChart3,
   Package,
   ArrowUp,
-  ArrowDown,
   TrendingUp,
   MapPin,
   AlertTriangle,
@@ -19,14 +18,11 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  LineChart,
-  Line,
   PieChart,
   Pie,
   Cell,
 } from 'recharts';
 
-// Mock data for charts
 const stockMovements = [
   { name: 'Jan', entry: 400, exit: 240 },
   { name: 'Feb', entry: 300, exit: 139 },
@@ -48,7 +44,6 @@ const COLORS = ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B'];
 export default function Home() {
   return (
     <div className="min-h-screen bg-zinc-950 text-white p-8">
-      {/* Header */}
       <div className="mb-8">
         <motion.h1
           initial={{ opacity: 0, y: -20 }}
@@ -67,7 +62,6 @@ export default function Home() {
         </motion.p>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
