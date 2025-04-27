@@ -5,7 +5,6 @@ import { CreateArticleRequest } from "../dto/CreateArticleRequest";
 import { UpdateArticleRequest } from "../dto/UpdateArticleRequest";
 import { ImportResponse } from "../dto/ImportResponse";
 import { MagazieTotalResponse } from "../dto/MagazieTotalResponse";
-import { MagazieResponseList } from "../dto/MagazieResponseList";
 
 class ArticleService extends ApiServer {
   importArticlesFromExcel = async (
