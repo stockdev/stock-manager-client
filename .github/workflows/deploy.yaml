@@ -1,0 +1,74 @@
+name: CD - Deploy stock-manager-client
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      #──────────────────────── BUILD NUMBER ─────────────────────────#
+      - name: Set build number
+        id: build-number
+        run: echo "BUILD_NUMBER=$(date '+%d.%m.%Y.%H.%M.%S')" >> $GITHUB_ENV
+
+      #──────────────────────── CHECKOUT COD SERVER ──────────────────#
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      #──────────────────────── LOGIN DOCKER HUB ─────────────────────#
+      - name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      #──────────────────────── BUILD & PUSH IMAGINE ─────────────────#
+      - name: Docker Build and push
+        run: |
+          chmod +x ci/build-publish.sh
+          USERNAME=stockamanager \
+          REPO=stock-manager-client \
+          TAG=${{ env.BUILD_NUMBER }} \
+          ci/build-publish.sh ./
+
+      #──────────────────────── CHECKOUT REPO docker-compose ─────────#
+      - name: Checkout other repository
+        uses: actions/checkout@v2
+        with:
+          repository: 'stockdev/stock-manager-docker-compose'
+          token: ${{ secrets.DEPLOY_ACCESS_TOKEN }}
+          path: 'stock-manager-docker-compose'
+
+      #──────────────────────── UPDATE TAG & PUSH ────────────────────#
+      - name: Update and commit app version in docker-compose.yml
+        run: |
+          cd stock-manager-docker-compose/
+          
+          echo "──────── YAML înainte:"
+          cat docker-compose.yaml
+          echo "────────────────────────"
+          
+          # înlocuiește orice <namespace>/stock-manager-client:TAG
+          sed -i -E 's_([^/]+/stock-manager-client:)([^"'"'"']*)_\1'${{ env.BUILD_NUMBER }}'_' docker-compose.yaml
+          
+          echo "──────── YAML după:"
+          cat docker-compose.yaml
+          echo "────────────────────────"
+          
+          git config user.name  github-actions
+          git config user.email github-actions@github.com
+          
+          if git diff --quiet; then
+            echo "✅ Tag-ul era deja corect – nu comit nimic."
+          else
+            git add docker-compose.yaml
+            git commit -m "new app version: ${{ env.BUILD_NUMBER }}"
+            git push origin HEAD:main        # ← repo-ul ăsta are branch main!
+          fi
